@@ -1,4 +1,4 @@
-from buffer.abstract_item import AbstractItem
+from core.abstract_item import AbstractItem
 
 
 class RadioItem(AbstractItem):

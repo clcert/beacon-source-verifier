@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from threading import Thread, Event
-from buffer.buffer import Buffer
+from core.buffer import Buffer
 
 
 class AbstractSource(ABC):

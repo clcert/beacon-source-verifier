@@ -1,8 +1,8 @@
 import socket
 from abc import ABC
 
-from sources.abstract_source import AbstractSource
-from sources.mp3_frame import Frame
+from core.abstract_source import AbstractSource
+from radio.mp3_frame import Frame
 
 
 class RadioSource(AbstractSource, ABC):

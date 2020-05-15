@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from collections import OrderedDict
 from typing import List
 
-from buffer.abstract_item import AbstractItem
+from core.abstract_item import AbstractItem
 
 
 class Buffer:

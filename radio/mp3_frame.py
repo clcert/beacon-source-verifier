@@ -116,6 +116,5 @@ class FrameHeader:
 class Frame:
     def __init__(self, sock: socket):
         self.header = FrameHeader(sock)
-        # Read Frame Data
         self.data = sock.recv(self.header.frame_size)
 

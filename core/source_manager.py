@@ -2,7 +2,7 @@ from datetime import time
 from threading import Thread
 from typing import List
 
-from sources.abstract_source import AbstractSource
+from core.abstract_source import AbstractSource
 
 BEACON_VERIFIER_API = "https://random.uchile.cl/beacon/2.0/pulse/time/{}"
 
