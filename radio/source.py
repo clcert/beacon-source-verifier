@@ -1,18 +1,18 @@
-import socket
-from abc import ABC
+import asyncio
+import logging
 
 from core.abstract_source import AbstractSource
 from radio.mp3_frame import Frame
 
 
-class RadioSource(AbstractSource, ABC):
-    RADIO_URL = ("200.89.71.21", 8000)
-    BUFFER_SIZE = 100
-    HEADER_SIZE = 4
+class RadioSource(AbstractSource):
+    BUFFER_SIZE = 26 * 1000 * 2 * 5
+    FRAMES_NUM = 300
 
-    def __init__(self):
-        self.socket: socket.socket
-        super(AbstractSource, self).__init__(self.BUFFER_SIZE)
+    def __init__(self, url: str, port: int):
+        self.url = url
+        self.port = port
+        super().__init__(self.BUFFER_SIZE)
 
     def name(self) -> str:
         return "radio"
@@ -20,24 +20,38 @@ class RadioSource(AbstractSource, ABC):
     def id(self) -> int:
         return 3
 
-    def __verify(self, params: map) -> bool:
-        pass
+    async def verify(self, params: map) -> map:
+        # extract data from buffer using params.metadata
+        # compare with params.event
+        if self.buffer.check_hash(params["metadata"]):
+            while len(self.buffer) < self.FRAMES_NUM:
+                logging.debug(f"we need {self.FRAMES_NUM} frames to generate randomness but we have {len(self.buffer)}, waiting 5 seconds...")
+                await asyncio.sleep(5)
+            frames = self.buffer.get_list(self.FRAMES_NUM)
+            d = b''
+            logging.debug(f"joining raw data from {len(frames)} frames...")
+            for frame in frames:
+                d += frame.get_raw_data()
+            logging.debug(f"Data joined, comparing with event data:")
+            if d.hex() == params["event"]:
+                return {self.name(): True}
+        else:
+            return {self.name(): False}
 
-    def __init_collector(self) -> None:
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.connect(self.RADIO_URL)
-        self.socket.send(b'GET /; HTTP/1.0\r\n\r\n')
+    async def init_collector(self) -> None:
+        self.reader, self.writer = await asyncio.open_connection(self.url, self.port)
+        self.writer.write(b'GET /; HTTP/1.0\r\n\r\n')
 
-    def __collect(self):
-        try:
-            frame = Frame(self.socket)
-            print("frame with version={} layer= {} bitrate={} samplerate={} size={}".format(frame.header.version,
-                                                                                            frame.header.layer,
-                                                                                            frame.header.bitrate,
-                                                                                            frame.header.samplerate,
-                                                                                            frame.header.frame_size))
-        except Exception as e:
-            print("exception {}".format(e))
+        line = await self.reader.readline()
+        while len(line.strip()) != 0:
+            # empty line means HTTP headers finished
+            line = await self.reader.readline()
 
-    def __finish_collector(self) -> None:
-        self.socket.close()
+    async def collect(self):
+        frame = Frame()
+        await frame.read(self.reader)
+        self.buffer.add(frame)
+
+    async def finish_collector(self) -> None:
+        self.writer.close()
+        await self.writer.wait_closed()

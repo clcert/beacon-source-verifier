@@ -1,17 +1,32 @@
-from datetime import time
+import asyncio
+import logging
 from threading import Thread
-from typing import List
+from typing import List, Set
+
+import requests
 
 from core.abstract_source import AbstractSource
 
-BEACON_VERIFIER_API = "https://random.uchile.cl/beacon/2.0/pulse/time/{}"
 
 class SourceManager:
-    def __init__(self, timeout: int = 30):
+
+    def __init__(self, verifier_api: str,
+                 verification_interval: int = 60,
+                 verify_timeout: int = 30,
+                 stop_collector_timeout: int = 10):
+        self.collector_futures: Set[asyncio.Future] = set()
         self.sources: List[AbstractSource] = []
-        self.collect_threads: List[Thread] = []
-        self.verify_threads: List[Thread] = []
-        self.timeout = timeout
+        self.verify_timeout = verify_timeout
+        self.stop_collector_timeout = stop_collector_timeout
+        self.verifier_api = verifier_api
+        self.verification_interval = verification_interval
+        self.collector_loop = asyncio.new_event_loop()
+        self.collector_thread = Thread(target=self.run_loop)
+        self.collector_thread.start()
+
+    def run_loop(self):
+        asyncio.set_event_loop(self.collector_loop)
+        self.collector_loop.run_forever()
 
     def add_source(self, source: AbstractSource) -> None:
         """
@@ -20,18 +35,47 @@ class SourceManager:
         self.sources.append(source)
 
     def start_collection(self):
+        logging.debug(f"Starting collectors: {[source.name() for source in self.sources]}")
+        self.collector_futures.update(
+            [asyncio.run_coroutine_threadsafe(source.run_collector(), self.collector_loop) for source in
+             self.sources])
+
+    async def stop_collection(self):
+        logging.debug(f"Stopping collectors: {[source.name() for source in self.sources]}")
         for source in self.sources:
-            # Run collector in a thread
-            self.collect_threads.append(Thread(None, source.run_collector))
-            self.collect_threads[-1].run()
+            await source.stop_collector()
+        done, pending = await asyncio.wait({future for future in self.collector_futures},
+                                           return_when=asyncio.FIRST_EXCEPTION,
+                                           timeout=self.stop_collector_timeout)
+        for p in pending:
+            p.cancel()
 
-    def run_verification(self):
+    async def run_verification(self) -> int:
+        logging.debug("Starting verification process...")
         while True:
-            # get pulse
+            f = (await asyncio.gather(
+                self.run_one_verification(),
+                asyncio.sleep(self.verification_interval),
+            ))
+            print(f)
 
-            # Get verification daa
-            current_time = int(time.time()) * 1000
-            map = {}
-            for source in self.sources:
-                self.collect_threads.append(Thread(None, source.verify_data, map[source.name()]))
-        self.verify_threads = []
+    async def run_one_verification(self) -> map:
+        params = self.get_params()
+        done, pending = await asyncio.wait(
+            {asyncio.create_task(source.verify(params[source.id()])) for source in self.sources},
+            timeout=self.verify_timeout)
+        for task in pending:
+            task.cancel()
+        joined_map = {}
+        for res in done:
+            joined_map.update(res.result())
+        return joined_map
+
+    def get_params(self) -> map:
+        pulse = requests.get(f"{self.verifier_api}/pulse/last").json()
+        extValues = requests.get(f"{self.verifier_api}/extValue/{pulse['pulse']['external']['value']}").json()[
+            "eventsCollected"]
+        paramsMap = {}
+        for value in extValues:
+            paramsMap[value["sourceId"]] = value
+        return paramsMap

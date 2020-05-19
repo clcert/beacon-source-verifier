@@ -1,13 +1,14 @@
+import logging
 from abc import ABC, abstractmethod
-
 
 class AbstractItem(ABC):
 
-    def __init__(self, data: any):
-        self.data = data
+    def __init__(self):
+        self.data = b''
+        pass
 
     @abstractmethod
-    def get_raw_data(self) -> str:
+    def get_raw_data(self) -> bytes:
         """
         Returns raw data of the item as a bytes object
         :return:
@@ -15,7 +16,7 @@ class AbstractItem(ABC):
         pass
 
     @abstractmethod
-    def get_hash(self) -> str:
+    def get_marker(self) -> str:
         """
         Returns the hash of the item
         :return: hash of the item
