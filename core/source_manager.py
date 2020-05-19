@@ -53,10 +53,7 @@ class SourceManager:
     async def run_verification(self) -> int:
         logging.debug("Starting verification process...")
         while True:
-            f = (await asyncio.gather(
-                self.run_one_verification(),
-                asyncio.sleep(self.verification_interval),
-            ))
+            f = await self.run_one_verification()
             print(f)
 
     async def run_one_verification(self) -> map:
