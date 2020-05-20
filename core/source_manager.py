@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from datetime import datetime
 from threading import Thread
 from typing import List, Set
 
@@ -50,11 +51,16 @@ class SourceManager:
         for p in pending:
             p.cancel()
 
-    async def run_verification(self) -> int:
+    async def run_verification(self):
         logging.debug("Starting verification process...")
         while True:
-            f = await self.run_one_verification()
-            print(f)
+            start_time = datetime.now()
+            res = await self.run_one_verification()
+            print(res)
+            end_time = datetime.now()
+            wait_time = 60 - (end_time - start_time).seconds
+            logging.debug(f"finished this cycle, waiting {wait_time} seconds")
+            await asyncio.sleep(wait_time)
 
     async def run_one_verification(self) -> map:
         params = self.get_params()
