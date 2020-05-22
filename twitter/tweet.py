@@ -1,7 +1,4 @@
 import asyncio
-import hashlib
-import logging
-from enum import Enum
 
 from core.abstract_item import AbstractItem
 
