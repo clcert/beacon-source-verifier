@@ -124,6 +124,7 @@ class FrameHeader:
 class Frame(AbstractItem):
     def __init__(self):
         self.header = FrameHeader()
+        self.data = b''
         super().__init__()
 
     def get_raw_data(self) -> bytes:

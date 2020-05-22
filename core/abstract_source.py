@@ -5,9 +5,9 @@ from core.buffer import Buffer
 
 
 class AbstractSource(metaclass=ABCMeta):
-    def __init__(self, buffer_size: int):
+    def __init__(self, buffer: Buffer):
         self.stop_event = Event()
-        self.buffer = Buffer(buffer_size)
+        self.buffer = buffer
 
     async def run_collector(self) -> None:
         try:

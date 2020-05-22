@@ -2,6 +2,7 @@ import asyncio
 import logging
 
 from core.abstract_source import AbstractSource
+from core.ordered_dict_buffer import OrderedDictBuffer
 from radio.mp3_frame import Frame
 
 
@@ -12,7 +13,7 @@ class RadioSource(AbstractSource):
     def __init__(self, url: str, port: int):
         self.url = url
         self.port = port
-        super().__init__(self.BUFFER_SIZE)
+        super().__init__(OrderedDictBuffer(self.BUFFER_SIZE))
 
     def name(self) -> str:
         return "radio"
@@ -23,7 +24,7 @@ class RadioSource(AbstractSource):
     async def verify(self, params: map) -> map:
         # extract data from buffer using params.metadata
         # compare with params.event
-        if self.buffer.check_hash(params["metadata"]):
+        if self.buffer.check_marker(params["metadata"]):
             while len(self.buffer) < self.FRAMES_NUM:
                 logging.debug(f"we need {self.FRAMES_NUM} frames to generate randomness but we have {len(self.buffer)}, waiting 5 seconds...")
                 await asyncio.sleep(5)
