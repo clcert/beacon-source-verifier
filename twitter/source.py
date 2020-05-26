@@ -7,8 +7,8 @@ from requests.auth import AuthBase
 
 from twitter.tweet import Tweet
 
-stream_url = "https://api.twitter.com/labs/1/tweets/stream/sample"
-
+STREAM_URL = "https://api.twitter.com/labs/1/tweets/stream/sample"
+TWEET_INTERVAL = 10
 
 # Gets a bearer token
 class BearerTokenAuth(AuthBase):
@@ -55,14 +55,14 @@ class TwitterSource(AbstractSource):
 
     async def init_collector(self) -> None:
         bearer_token = BearerTokenAuth(self.key, self.secret)
-        self.response = requests.get(stream_url, auth=bearer_token, headers={"User-Agent": "RandomVerifier-Python"},
+        self.response = requests.get(STREAM_URL, auth=bearer_token, headers={"User-Agent": "RandomVerifier-Python"},
                                      stream=True)
 
     async def collect(self) -> None:
         for response_line in self.response.iter_lines():
             if response_line:
                 t = json.loads(response_line)
-                self.buffer.add(Tweet(t["id"], t["created_at"], t["author_id"], t["text"]))
+                self.buffer.add(Tweet(*(t[field] for field in Tweet.FIELD_ORDER))
 
     async def finish_collector(self) -> None:
         self.response.close()
