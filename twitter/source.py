@@ -1,10 +1,15 @@
+import asyncio
+import datetime
+import logging
+from typing import List
+
 from core.abstract_source import AbstractSource
-from core.heap_buffer import HeapBuffer
 
 import requests
 import json
 from requests.auth import AuthBase
 
+from twitter.buffer import TwitterBuffer
 from twitter.tweet import Tweet
 
 STREAM_URL = "https://api.twitter.com/labs/1/tweets/stream/sample"
@@ -44,15 +49,22 @@ class TwitterSource(AbstractSource):
         self.key = config["consumer_key"]
         self.secret = config["consumer_secret"]
         self.tweet_interval = config["tweet_interval"]
-        super().__init__(HeapBuffer(self.BUFFER_SIZE, self.create_heap_item))
+        self.buffer = TwitterBuffer(self.BUFFER_SIZE)
+        super().__init__()
 
     async def verify(self, params: map) -> map:
-        if params["metadata"][:len(self.prefix)] != self.prefix:
-            logging.error(f"wrong marker. It should start with \"{self.prefix}\"")
+        their_list = parse_tweet_list(params["event"])
+        start_date = datetime.datetime.strptime(params["metadata"], "%a %b %d %H:%M:%S +0000 %Y")
+        end_date = start_date + datetime.timedelta(seconds=10)
+        if self.buffer.check_marker(start_date):
+            our_list = self.buffer.get_list()
+
+
         else:
             if self.buffer.check_marker(params["metadata"]):
                 while len(self.buffer) < self.FRAMES_NUM:
-                    logging.debug(f"we need {self.FRAMES_NUM} frames to generate randomness but we have {len(self.buffer)}, waiting 5 seconds...")
+                    logging.debug(
+                        f"we need {self.FRAMES_NUM} frames to generate randomness but we have {len(self.buffer)}, waiting 5 seconds...")
                     await asyncio.sleep(5)
                 frames = self.buffer.get_list(self.FRAMES_NUM)
                 d = b''
@@ -79,10 +91,14 @@ class TwitterSource(AbstractSource):
     async def finish_collector(self) -> None:
         self.response.close()
 
-    def parse_tweet_list(self, list: str) map:
-        try
-            tweet_list = json.loads(list)
-        except Exception as e:
-            lo
-    def create_heap_item(self, item: Tweet) -> tuple:
-        return item.id, item
+
+def parse_tweet_list(tweet_list: str) -> List[Tweet]:
+    tweets = []
+    try:
+        tweet_json_list = json.loads(tweet_list)
+        for tweet_json in tweet_json_list:
+            t = tweet_json["data"]
+            tweets.append(Tweet(t["id"], t["created_at"], t["author_id"], t["text"]))
+    except Exception as e:
+        logging.error(f"cannot parse tweet list: {e}")
+    return tweets

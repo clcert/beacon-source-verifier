@@ -2,7 +2,7 @@ import asyncio
 import logging
 
 from core.abstract_source import AbstractSource
-from core.ordered_dict_buffer import OrderedDictBuffer
+from radio.buffer import RadioBuffer
 from radio.mp3_frame import Frame
 
 
@@ -17,7 +17,8 @@ class RadioSource(AbstractSource):
         self.url = config["url"]
         self.port = config["port"]
         self.prefix = config["prefix"]
-        super().__init__(OrderedDictBuffer(self.BUFFER_SIZE))
+        self.buffer = RadioBuffer(self.BUFFER_SIZE)
+        super().__init__()
 
     async def verify(self, params: map) -> map:
         if params["metadata"][:len(self.prefix)] != self.prefix:
@@ -41,7 +42,6 @@ class RadioSource(AbstractSource):
     async def init_collector(self) -> None:
         self.reader, self.writer = await asyncio.open_connection(self.url, self.port)
         self.writer.write(b'GET /; HTTP/1.0\r\n\r\n')
-
         line = await self.reader.readline()
         while len(line.strip()) != 0:
             # empty line means HTTP headers finished

@@ -2,7 +2,6 @@ import asyncio
 import logging
 from abc import abstractmethod, ABCMeta
 from threading import Thread, Event
-from core.buffer import Buffer
 
 
 class AbstractSource(metaclass=ABCMeta):
@@ -12,9 +11,8 @@ class AbstractSource(metaclass=ABCMeta):
     NAME = "abstract_source"
     ID = 0
 
-    def __init__(self, buffer: Buffer):
+    def __init__(self):
         self.stop_event = Event()
-        self.buffer = buffer
         self.loop = asyncio.new_event_loop()
         self.thread: Thread = Thread(target=self.run_loop)
 

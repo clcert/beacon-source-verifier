@@ -1,9 +1,6 @@
 import asyncio
 import hashlib
-import logging
 from enum import Enum
-
-from core.abstract_item import AbstractItem
 
 
 class InvalidSyncByteException(Exception):
@@ -121,11 +118,10 @@ class FrameHeader:
             self.body_size += 1  # MP3 padding size is 1 byte
 
 
-class Frame(AbstractItem):
+class Frame:
     def __init__(self):
         self.header = FrameHeader()
         self.data = b''
-        super().__init__()
 
     def get_raw_data(self) -> bytes:
         return self.header.data + self.data
@@ -140,4 +136,3 @@ class Frame(AbstractItem):
             new_data = await reader.read(to_read)
             to_read -= len(new_data)
             self.data += new_data
-

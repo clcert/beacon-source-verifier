@@ -1,21 +1,19 @@
 import logging
-from abc import ABC, abstractmethod
 from collections import OrderedDict
 from typing import List
 
-from core.abstract_item import AbstractItem
-from core.buffer import Buffer
+from radio.mp3_frame import Frame
 
 
-class OrderedDictBuffer(Buffer):
+class RadioBuffer:
     def __init__(self, size: int):
         self.buffer = OrderedDict()
-        super().__init__(size)
+        self.size = size
 
     def __len__(self):
         return len(self.buffer)
 
-    def add(self, item: AbstractItem) -> None:
+    def add(self, item: Frame) -> None:
         self.buffer[item.get_marker()] = item
         if len(self.buffer) > self.size:
             self.buffer.popitem(False)
@@ -35,12 +33,12 @@ class OrderedDictBuffer(Buffer):
         logging.debug(f"marker {marker} not found...")
         return False
 
-    def get_list(self, size: int) -> List[AbstractItem]:
+    def get_list(self, size: int) -> List[Frame]:
         if len(self.buffer) < size:
             logging.debug(f"buffer not full yet ({len(self.buffer)}/{self.size}), try again in a few seconds...")
             return []
         else:
-            res: List[AbstractItem] = []
+            res: List[Frame] = []
             for i in range(size):
                 k, v = self.buffer.popitem(False)
                 res.append(v)
