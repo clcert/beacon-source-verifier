@@ -21,7 +21,7 @@ class OrderedDictBuffer(Buffer):
             self.buffer.popitem(False)
 
     def check_marker(self, marker: str) -> bool:
-        logging.debug(f"checking hash {marker} (buffer size = {len(self.buffer)} items)")
+        logging.debug(f"checking marker {marker} (buffer size = {len(self.buffer)} items)")
         i = 0
         if marker in self.buffer:
             while len(self.buffer) > 0:
@@ -32,7 +32,7 @@ class OrderedDictBuffer(Buffer):
                     logging.debug(f"removed {i} elements before hash...")
                     return True
                 i += 1
-        logging.debug(f"hash {marker} not found...")
+        logging.debug(f"marker {marker} not found...")
         return False
 
     def get_list(self, size: int) -> List[AbstractItem]:

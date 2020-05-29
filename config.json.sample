@@ -1,0 +1,20 @@
+{
+  "log_level": "debug",
+  "warmup_time": 120,
+  "verification_timeout": 30,
+  "verification_interval": 60,
+  "base_api": "https://random.uchile.cl/beacon/2.0-beta1",
+  "collector_stop_timeout": 10,
+  "sources": {
+    "radio": {
+      "url": "200.89.71.21",
+      "port": 8000,
+      "prefix": "00"
+    },
+    "twitter": {
+      "consumer_key": "xxx",
+      "consumer_secret": "xxx",
+      "tweet_interval": 10
+    }
+  }
+}

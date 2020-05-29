@@ -1,14 +1,10 @@
-import asyncio
-
 from core.abstract_item import AbstractItem
 
 
 class Tweet(AbstractItem):
-    FIELD_ORDER = ("created_at", "id", "author_id", "text")
-
-    def __init__(self, date: str, id: int, author: str, message: str):
-        self.date = date
+    def __init__(self, id: int, date: str, author: str, message: str):
         self.id = id
+        self.date = date
         self.author = author
         self.message = message
         super().__init__()

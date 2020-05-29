@@ -27,7 +27,7 @@ class Buffer(ABC):
     @abstractmethod
     def check_marker(self, marker: str) -> bool:
         """
-        Checks if hash exist in buffer and if it exists, returns a list of return_size elements.
+        Checks if hash exist in buffer and if it exists, returns true.
         :param marker: hash to look for
         :param return_size: number of elements to return from buffer
         :return:

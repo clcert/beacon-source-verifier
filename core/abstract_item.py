@@ -2,7 +2,9 @@ import logging
 from abc import ABC, abstractmethod
 
 class AbstractItem(ABC):
-
+    """
+    Represents an abstract item collected from the stream source
+    """
     def __init__(self):
         pass
 
@@ -10,7 +12,7 @@ class AbstractItem(ABC):
     def get_raw_data(self) -> bytes:
         """
         Returns raw data of the item as a bytes object
-        :return:
+        :return: raw data
         """
         pass
 
