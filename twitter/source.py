@@ -47,7 +47,23 @@ class TwitterSource(AbstractSource):
         super().__init__(HeapBuffer(self.BUFFER_SIZE, self.create_heap_item))
 
     async def verify(self, params: map) -> map:
-        pass
+        if params["metadata"][:len(self.prefix)] != self.prefix:
+            logging.error(f"wrong marker. It should start with \"{self.prefix}\"")
+        else:
+            if self.buffer.check_marker(params["metadata"]):
+                while len(self.buffer) < self.FRAMES_NUM:
+                    logging.debug(f"we need {self.FRAMES_NUM} frames to generate randomness but we have {len(self.buffer)}, waiting 5 seconds...")
+                    await asyncio.sleep(5)
+                frames = self.buffer.get_list(self.FRAMES_NUM)
+                d = b''
+                logging.debug(f"joining raw data from {len(frames)} frames...")
+                for frame in frames:
+                    d += frame.get_raw_data()
+                logging.debug(f"Data joined, comparing with event data:")
+                d_hex = d.hex()
+                if d_hex == params["event"]:
+                    return {self.name(): True}
+        return {self.name(): False}
 
     async def init_collector(self) -> None:
         bearer_token = BearerTokenAuth(self.key, self.secret)
@@ -63,5 +79,10 @@ class TwitterSource(AbstractSource):
     async def finish_collector(self) -> None:
         self.response.close()
 
+    def parse_tweet_list(self, list: str) map:
+        try
+            tweet_list = json.loads(list)
+        except Exception as e:
+            lo
     def create_heap_item(self, item: Tweet) -> tuple:
         return item.id, item
