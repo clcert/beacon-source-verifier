@@ -5,13 +5,14 @@ from core.abstract_source import AbstractSource
 from radio.buffer import RadioBuffer
 from radio.mp3_frame import Frame
 
+log = logging.getLogger(__name__)
+
 
 class RadioSource(AbstractSource):
     BUFFER_SIZE = 26 * 1000 * 2 * 5
     FRAMES_NUM = 300
     NAME = "radio"
     ID = 3
-
 
     def __init__(self, config: map):
         self.url = config["url"]
@@ -22,18 +23,19 @@ class RadioSource(AbstractSource):
 
     async def verify(self, params: map) -> map:
         if params["metadata"][:len(self.prefix)] != self.prefix:
-            logging.error(f"wrong marker. It should start with \"{self.prefix}\"")
+            log.error(f"wrong marker. It should start with \"{self.prefix}\"")
         else:
             if self.buffer.check_marker(params["metadata"]):
                 while len(self.buffer) < self.FRAMES_NUM:
-                    logging.debug(f"we need {self.FRAMES_NUM} frames to generate randomness but we have {len(self.buffer)}, waiting 5 seconds...")
+                    log.debug(
+                        f"we need {self.FRAMES_NUM} frames to generate randomness but we have {len(self.buffer)}, waiting 5 seconds...")
                     await asyncio.sleep(5)
                 frames = self.buffer.get_list(self.FRAMES_NUM)
                 d = b''
-                logging.debug(f"joining raw data from {len(frames)} frames...")
+                log.debug(f"joining raw data from {len(frames)} frames...")
                 for frame in frames:
                     d += frame.get_raw_data()
-                logging.debug(f"Data joined, comparing with event data:")
+                log.debug(f"Data joined, comparing with event data:")
                 d_hex = d.hex()
                 if d_hex == params["event"]:
                     return {self.name(): True}
@@ -50,8 +52,8 @@ class RadioSource(AbstractSource):
     async def collect(self):
         frame = Frame()
         await frame.read(self.reader)
-        if frame.get_marker()[:len(self.prefix)] == self.prefix :
-            logging.info(f"valid marker: {frame.get_marker()}")
+        if frame.get_marker()[:len(self.prefix)] == self.prefix:
+            log.info(f"valid marker: {frame.get_marker()}")
         self.buffer.add(frame)
 
     async def finish_collector(self) -> None:

@@ -15,7 +15,7 @@ class InvalidBitrateException(Exception):
     pass
 
 
-class InvalidSamplerateException(Exception):
+class InvalidSampleRateException(Exception):
     pass
 
 
@@ -86,27 +86,27 @@ class FrameHeader:
         b = (await sock.read(1))[0]
         self.data += bytes([b])
         if b != 0xff:
-            raise InvalidSyncByteException()
+            raise InvalidSyncByteException(f"Invalid sync byte in this frame (should have been \\xff but it is {b})")
         # Next byte should be 0xf<x>
         b = (await sock.read(1))[0]
         self.data += bytes([b])
         if (b & 0xf0) != 0xf0:
-            raise InvalidSyncByteException()
+            raise InvalidSyncByteException(f"Invalid sync byte in this frame (should have been \\xf0 but it is {b})")
         self.version = FrameHeader.Version((b & 0x08) >> 3)
         if (b & 0x06) >> 1 != 1:
             # Layer is not 3 (0x01)
-            raise NonLayer3Exception()
+            raise NonLayer3Exception(f"MPEG frame is not layer 3 type")
         self.crc = True if (b & 0x01) == 0x01 else False
         b = (await sock.read(1))[0]
         self.data += bytes([b])
         bitrate = b >> 4
         if bitrate == 0x00 or bitrate == 0x0f:
             # invalid values
-            raise InvalidBitrateException()
+            raise InvalidBitrateException(f"Bitrate defined for type is not allowed (value obtained was {bitrate})")
         self.bitrate = self.BITRATE[self.version][bitrate]
         samplerate = (b & 0x0c) >> 2
         if samplerate == 0x03:
-            raise InvalidSamplerateException()
+            raise InvalidSampleRateException(f"samplerate obtained is invalid (obtained \x03)")
         self.samplerate = self.SAMPLERATE[self.version][samplerate]
         padding = (b & 0x02) >> 1
         if padding == 1:

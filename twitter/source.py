@@ -1,21 +1,20 @@
-import asyncio
 import datetime
+import json
 import logging
 from typing import List
 
-from core.abstract_source import AbstractSource
-
 import requests
-import json
 from requests.auth import AuthBase
 
+from core.abstract_source import AbstractSource
 from twitter.buffer import TwitterBuffer
 from twitter.tweet import Tweet
 
-STREAM_URL = "https://api.twitter.com/labs/1/tweets/stream/sample"
+log = logging.getLogger(__name__)
 
 
 class BearerTokenAuth(AuthBase):
+
     def __init__(self, consumer_key, consumer_secret):
         self.bearer_token_url = "https://api.twitter.com/oauth2/token"
         self.consumer_key = consumer_key
@@ -29,7 +28,7 @@ class BearerTokenAuth(AuthBase):
             data={'grant_type': 'client_credentials'},
             headers={"User-Agent": "TwitterDevSampledStreamQuickStartPython"})
 
-        if response.status_code is not 200:
+        if response.status_code != 200:
             raise Exception(f"Cannot get a Bearer token (HTTP %d): %s" % (response.status_code, response.text))
 
         body = response.json()
@@ -41,7 +40,8 @@ class BearerTokenAuth(AuthBase):
 
 
 class TwitterSource(AbstractSource):
-    BUFFER_SIZE = 26 * 1000 * 2 * 5
+    STREAM_URL = "https://api.twitter.com/labs/1/tweets/stream/sample"
+    BUFFER_SIZE = 500 * 10  # (~120 seconds)
     NAME = "twitter"
     ID = 2
 
@@ -50,36 +50,29 @@ class TwitterSource(AbstractSource):
         self.secret = config["consumer_secret"]
         self.tweet_interval = config["tweet_interval"]
         self.buffer = TwitterBuffer(self.BUFFER_SIZE)
+        self.response = None
         super().__init__()
 
     async def verify(self, params: map) -> map:
+        equal = False
         their_list = parse_tweet_list(params["event"])
-        start_date = datetime.datetime.strptime(params["metadata"], "%a %b %d %H:%M:%S +0000 %Y")
+        start_date = datetime.datetime.fromisoformat(params["metadata"][:-1])
         end_date = start_date + datetime.timedelta(seconds=10)
         if self.buffer.check_marker(start_date):
-            our_list = self.buffer.get_list()
-
-
-        else:
-            if self.buffer.check_marker(params["metadata"]):
-                while len(self.buffer) < self.FRAMES_NUM:
-                    logging.debug(
-                        f"we need {self.FRAMES_NUM} frames to generate randomness but we have {len(self.buffer)}, waiting 5 seconds...")
-                    await asyncio.sleep(5)
-                frames = self.buffer.get_list(self.FRAMES_NUM)
-                d = b''
-                logging.debug(f"joining raw data from {len(frames)} frames...")
-                for frame in frames:
-                    d += frame.get_raw_data()
-                logging.debug(f"Data joined, comparing with event data:")
-                d_hex = d.hex()
-                if d_hex == params["event"]:
-                    return {self.name(): True}
-        return {self.name(): False}
+            our_list = self.buffer.get_list(end_date)
+            if len(our_list) == len(their_list):
+                equal = True
+                for ours, theirs in zip(our_list, their_list):
+                    if ours != theirs:
+                        log.error(f"different lists!  ours: {ours} theirs: {theirs}")
+                        equal = False
+                        break
+        return {self.name(): equal}
 
     async def init_collector(self) -> None:
         bearer_token = BearerTokenAuth(self.key, self.secret)
-        self.response = requests.get(STREAM_URL, auth=bearer_token, headers={"User-Agent": "RandomVerifier-Python"},
+        self.response = requests.get(self.STREAM_URL, auth=bearer_token,
+                                     headers={"User-Agent": "RandomVerifier-Python"},
                                      stream=True)
 
     async def collect(self) -> None:
@@ -96,9 +89,8 @@ def parse_tweet_list(tweet_list: str) -> List[Tweet]:
     tweets = []
     try:
         tweet_json_list = json.loads(tweet_list)
-        for tweet_json in tweet_json_list:
-            t = tweet_json["data"]
+        for t in tweet_json_list:
             tweets.append(Tweet(t["id"], t["created_at"], t["author_id"], t["text"]))
     except Exception as e:
-        logging.error(f"cannot parse tweet list: {e}")
+        log.error(f"cannot parse tweet list: {e}")
     return tweets

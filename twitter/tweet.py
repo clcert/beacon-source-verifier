@@ -2,10 +2,11 @@ import datetime
 
 
 class Tweet:
+
     def __init__(self, id: int, created_date: str, author: str, message: str):
         self.id = id
         self.datestr = created_date
-        self.date = datetime.datetime.strptime(created_date, "%a %b %d %H:%M:%S +0000 %Y")
+        self.date = datetime.datetime.fromisoformat(created_date[:-1])
         self.author = author
         self.message = message
 

@@ -1,12 +1,15 @@
 import asyncio
+import json
 import logging
+import os
 from datetime import datetime
-from threading import Thread
 from typing import List, Set
 
 import requests
 
 from core.abstract_source import AbstractSource
+
+log = logging.getLogger(__name__)
 
 
 class BeaconAPIException(Exception):
@@ -25,6 +28,8 @@ class SourceManager:
         self.collector_stop_timeout = config["collector_stop_timeout"]
         self.base_api = config["base_api"]
         self.verification_interval = config["verification_interval"]
+        self.output_path = config["output_folder"]
+        os.makedirs(self.output_path, exist_ok=True)
 
     def add_source(self, source: AbstractSource) -> None:
         """
@@ -32,13 +37,12 @@ class SourceManager:
         """
         self.sources.append(source)
 
-
     def start_collection(self) -> None:
         """
         Starts collection of events indefinitely
         :return:
         """
-        logging.debug(f"Starting collectors: {[source.name() for source in self.sources]}")
+        log.debug(f"Starting collectors: {[source.name() for source in self.sources]}")
         threads = [source.thread.start() for source in self.sources]
         self.collector_futures.update(
             [asyncio.run_coroutine_threadsafe(source.run_collector(), source.loop) for source in self.sources])
@@ -48,7 +52,7 @@ class SourceManager:
         Stops the collection of events waiting at most stop_collector_timeout seconds
         :return:
         """
-        logging.debug(f"Stopping collectors: {[source.name() for source in self.sources]}")
+        log.debug(f"Stopping collectors: {[source.name() for source in self.sources]}")
         for source in self.sources:
             await source.stop_collector()
         done, pending = await asyncio.wait({future for future in self.collector_futures},
@@ -63,23 +67,21 @@ class SourceManager:
         :return:
         """
         await asyncio.sleep(2 * self.verification_interval)
-        logging.debug("Starting verification process...")
+        log.debug("Starting verification process...")
         while True:
+            start_time = datetime.now()
             try:
-                start_time = datetime.now()
-                res = await self.run_one_verification()
-                print(res)
-                end_time = datetime.now()
-                wait_time = 60 - (end_time - start_time).seconds
-                logging.debug(f"finished this cycle, waiting {wait_time} seconds")
-                await asyncio.sleep(wait_time)
+                await self.run_one_verification()
             except Exception as e:
-                logging.error(f"exception verifying pulse: {e}")
+                log.error(f"exception verifying pulse: {e}")
+            end_time = datetime.now()
+            wait_time = 60 - (end_time - start_time).seconds
+            log.debug(f"finished this cycle, waiting {wait_time} seconds")
+            await asyncio.sleep(wait_time)
 
-    async def run_one_verification(self) -> map:
+    async def run_one_verification(self):
         """
         Verifies a single pulse with all the enabled source verifiers.
-        :return: Map with name of source as key, and source status as value
         """
         params = self.get_params()
         done, pending = await asyncio.wait(
@@ -90,8 +92,7 @@ class SourceManager:
         joined_map = {}
         for res in done:
             joined_map.update(res.result())
-        print(joined_map)
-        return joined_map
+        self.save_response(params["pulse"]["uri"], joined_map)
 
     def get_params(self) -> map:
         """
@@ -101,13 +102,29 @@ class SourceManager:
         """
         pulse_req = requests.get(f"{self.base_api}/pulse/last")
         if pulse_req.status_code != 200:
-            raise BeaconAPIException()
+            raise BeaconAPIException(f"Pulse API answered with non-200 code: {pulse_req.status_code}")
         pulse = pulse_req.json()
         extValues_req = requests.get(f"{self.base_api}/extValue/{pulse['pulse']['external']['value']}")
         if extValues_req.status_code != 200:
-            raise BeaconAPIException()
+            raise BeaconAPIException(f"ExtValue API answered with non-200 code: {extValues_req.status_code}")
         extValues = extValues_req.json()["eventsCollected"]
         paramsMap = {}
         for value in extValues:
             paramsMap[value["sourceName"]] = value
         return paramsMap
+
+
+    def save_response(self, pulse, sources):
+        response = {
+            "pulse": pulse,
+            "valid": True,
+            "checked_date": datetime.now(),
+            "sources": sources,
+        }
+        log.info(json.dumps(response))
+        pulse_splitted = pulse.split("/")[-4:]
+        folder = f"{self.output_path}/{pulse_splitted[:3]}"
+        os.makedirs(folder, exist_ok=True)
+        with open(f"{folder}/{folder}/{pulse_splitted[3]}.json", 'w') as f:
+            json.dump(response, f)
+        return response

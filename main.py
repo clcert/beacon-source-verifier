@@ -3,34 +3,42 @@ import json
 import logging
 import sys
 
-from radio.source import RadioSource
 from core.source_manager import SourceManager
+from radio.source import RadioSource
 from twitter.source import TwitterSource
 
-logging.basicConfig(format="%(asctime)s [%(levelname)s] %(message)s", level=logging.DEBUG)
 config = {}
 
+log = logging.getLogger(__name__)
+
 sources = [
-     RadioSource,
-     TwitterSource,
+    RadioSource,
+    TwitterSource,
 ]
 
 if __name__ == "__main__":
-    logging.info("Reading config...")
     try:
         with open("config.json") as f:
             config = json.load(f)
     except Exception as e:
-        logging.error(f"cannot read config file: {e}")
+        print(f"cannot read config file: {e}")
         exit(1)
-    logging.info("Starting Verifier Process")
+    logging.basicConfig(
+        format='%(asctime)s  [%(name)s] %(levelname)s - %(message)s',
+        level=logging.getLevelName(config["log_level"].upper()),
+        handlers=[
+            logging.FileHandler(filename=config["log_name"]),
+            logging.StreamHandler(sys.stdout)
+        ]
+    )
+    log.info("Starting Verifier Process")
     sourceManager = SourceManager(config)
     if not "sources" in config:
-        logging.error(f"cannot find sources section in config file")
+        log.error(f"cannot find sources section in config file")
         exit(1)
     for source in sources:
         if not source.NAME in config["sources"]:
-            logging.error(f"cannot find config for source {source.NAME}")
+            log.error(f"cannot find config for source {source.NAME}")
             exit(1)
         source_config = config["sources"][source.NAME]
         source_instance = source(source_config)

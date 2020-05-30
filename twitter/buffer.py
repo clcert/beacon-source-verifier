@@ -5,6 +5,8 @@ from typing import List
 
 from twitter.tweet import Tweet
 
+log = logging.getLogger(__name__)
+
 
 class TwitterBuffer:
     def __init__(self, size: int):
@@ -21,7 +23,7 @@ class TwitterBuffer:
             heapq.heappush(self.buffer, create_heap_item(item))
 
     def check_marker(self, marker: datetime.date) -> bool:
-        logging.debug(f"checking marker {marker} (buffer size = {len(self.buffer)} items)")
+        log.debug(f"checking marker {marker} (buffer size = {len(self.buffer)} items)")
         while len(self.buffer) > 0:
             item = heapq.heappop(self.buffer)
             if item[-1].date == marker:
@@ -33,7 +35,7 @@ class TwitterBuffer:
         items = []
         while len(self.buffer) > 0:
             item = heapq.heappop(self.buffer)
-            if item.date <= end_date:
+            if item[-1].date <= end_date:
                 items.append(item[-1])
             else:
                 heapq.heappush(self.buffer, item)

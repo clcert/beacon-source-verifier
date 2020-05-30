@@ -1,1 +1,16 @@
-requests
+certifi==2020.4.5.1
+chardet==3.0.4
+h11==0.9.0
+h2==3.2.0
+hpack==3.0.0
+hstspreload==2020.5.19
+httpx==0.12.1
+hyperframe==5.2.0
+idna==2.9
+mplayer.py==0.7.2.post1
+pydub==0.24.0
+pymad==0.10
+requests==2.23.0
+rfc3986==1.4.0
+sniffio==1.1.0
+urllib3==1.25.9

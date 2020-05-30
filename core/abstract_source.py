@@ -3,6 +3,8 @@ import logging
 from abc import abstractmethod, ABCMeta
 from threading import Thread, Event
 
+log = logging.getLogger(__name__)
+
 
 class AbstractSource(metaclass=ABCMeta):
     """
@@ -21,7 +23,7 @@ class AbstractSource(metaclass=ABCMeta):
         Executes this collector indefinitely
         :return:
         """
-        logging.info(f"Starting {self.name()} loop...")
+        log.info(f"Starting {self.name()} loop...")
         asyncio.set_event_loop(self.loop)
         self.loop.run_forever()
 
