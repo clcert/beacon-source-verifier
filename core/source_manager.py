@@ -83,7 +83,7 @@ class SourceManager:
         """
         Verifies a single pulse with all the enabled source verifiers.
         """
-        params = self.get_params()
+        pulseID, params = self.get_params()
         done, pending = await asyncio.wait(
             {asyncio.create_task(source.verify(params[source.name()])) for source in self.sources},
             timeout=self.verification_timeout)
@@ -92,13 +92,13 @@ class SourceManager:
         joined_map = {}
         for res in done:
             joined_map.update(res.result())
-        self.save_response(params["pulse"]["uri"], joined_map)
+        self.save_response(pulseID, joined_map)
 
     def get_params(self) -> map:
         """
         Returns a map with the verification params of the current pulse.
         Each param is tagged with the respective source ID.
-        :return: map with params
+        :return: pulse id and map with params
         """
         pulse_req = requests.get(f"{self.base_api}/pulse/last")
         if pulse_req.status_code != 200:
@@ -111,20 +111,19 @@ class SourceManager:
         paramsMap = {}
         for value in extValues:
             paramsMap[value["sourceName"]] = value
-        return paramsMap
-
+        return pulse["pulse"]["uri"], paramsMap
 
     def save_response(self, pulse, sources):
         response = {
             "pulse": pulse,
             "valid": True,
-            "checked_date": datetime.now(),
+            "checked_date": datetime.now().isoformat(),
             "sources": sources,
         }
         log.info(json.dumps(response))
         pulse_splitted = pulse.split("/")[-4:]
-        folder = f"{self.output_path}/{pulse_splitted[:3]}"
+        folder = f"{self.output_path}{'/'.join(pulse_splitted[:3])}"
         os.makedirs(folder, exist_ok=True)
-        with open(f"{folder}/{folder}/{pulse_splitted[3]}.json", 'w') as f:
+        with open(f"{folder}/{pulse_splitted[3]}.json", 'w') as f:
             json.dump(response, f)
         return response
