@@ -55,6 +55,7 @@ class TwitterSource(AbstractSource):
 
     async def verify(self, params: map) -> map:
         equal = False
+        log.error(f"Checking twitter buffer... (length: {len(self.buffer)})")
         their_list = parse_tweet_list(params["event"])
         start_date = datetime.datetime.fromisoformat(params["metadata"][:-1])
         end_date = start_date + datetime.timedelta(seconds=10)
