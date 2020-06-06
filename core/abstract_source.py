@@ -31,13 +31,16 @@ class AbstractSource(metaclass=ABCMeta):
         """
         Executes asynchronous collection of events from the source
         """
-        try:
-            await self.init_collector()
-            while not self.stop_event.is_set():
-                await self.collect()
-            await self.finish_collector()
-        except Exception as e:
-            print(f"Exception in {self.name()} collector: {e.__str__()}")
+        while True:
+            log.info(f"Starting collector {self.name()}...")
+            try:
+                await self.init_collector()
+                while not self.stop_event.is_set():
+                    await self.collect()
+                await self.finish_collector()
+                return
+            except Exception as e:
+                log.error(f"Exception in {self.name()} collector: {e.__str__()}, restarting...")
 
     async def stop_collector(self):
         """

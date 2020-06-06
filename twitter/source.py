@@ -81,6 +81,7 @@ class TwitterSource(AbstractSource):
             if response_line:
                 t = json.loads(response_line)["data"]
                 self.buffer.add(Tweet(t["id"], t["created_at"], t["author_id"], t["text"]))
+        print("collector ended :(")
 
     async def finish_collector(self) -> None:
         self.response.close()
