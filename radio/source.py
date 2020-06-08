@@ -12,7 +12,6 @@ class RadioSource(AbstractSource):
     BUFFER_SIZE = 26 * 1000 * 2 * 5
     FRAMES_NUM = 300
     NAME = "radio"
-    ID = 3
 
     def __init__(self, config: map):
         self.url = config["url"]

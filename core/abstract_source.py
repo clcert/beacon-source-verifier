@@ -56,14 +56,7 @@ class AbstractSource(metaclass=ABCMeta):
         :return: source name
         """
         return self.NAME
-
-    def id(self) -> int:
-        """
-        Returns source id
-        :return: source id
-        """
-        return self.ID
-
+        
     @abstractmethod
     async def verify(self, params: map) -> map:
         """

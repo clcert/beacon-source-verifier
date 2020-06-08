@@ -43,7 +43,6 @@ class TwitterSource(AbstractSource):
     STREAM_URL = "https://api.twitter.com/labs/1/tweets/stream/sample"
     BUFFER_SIZE = 500 * 10  # (~120 seconds)
     NAME = "twitter"
-    ID = 2
 
     def __init__(self, config: map):
         self.key = config["consumer_key"]

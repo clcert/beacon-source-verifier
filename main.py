@@ -6,6 +6,7 @@ import sys
 from core.source_manager import SourceManager
 from radio.source import RadioSource
 from twitter.source import TwitterSource
+from seismology.source import SeismSource
 
 config = {}
 
@@ -13,7 +14,8 @@ log = logging.getLogger(__name__)
 
 sources = [
     RadioSource,
-    TwitterSource,
+#    TwitterSource,
+    SeismSource,
 ]
 
 if __name__ == "__main__":
