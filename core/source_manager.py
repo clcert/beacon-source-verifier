@@ -29,6 +29,7 @@ class SourceManager:
         self.base_api = config["base_api"]
         self.verification_interval = config["verification_interval"]
         self.output_path = config["output_folder"]
+        self.threads = None
         os.makedirs(self.output_path, exist_ok=True)
 
     def add_source(self, source: AbstractSource) -> None:
@@ -43,7 +44,7 @@ class SourceManager:
         :return:
         """
         log.debug(f"Starting collectors: {[source.name() for source in self.sources]}")
-        threads = [source.thread.start() for source in self.sources]
+        self.threads = [source.thread.start() for source in self.sources]
         self.collector_futures.update(
             [asyncio.run_coroutine_threadsafe(source.run_collector(), source.loop) for source in self.sources])
 
@@ -55,7 +56,7 @@ class SourceManager:
         log.debug(f"Stopping collectors: {[source.name() for source in self.sources]}")
         for source in self.sources:
             await source.stop_collector()
-        done, pending = await asyncio.wait({future for future in self.collector_futures},
+        _, pending = await asyncio.wait({future for future in self.collector_futures},
                                            return_when=asyncio.FIRST_EXCEPTION,
                                            timeout=self.collector_stop_timeout)
         for p in pending:

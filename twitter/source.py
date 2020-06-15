@@ -7,7 +7,7 @@ import requests
 from requests.auth import AuthBase
 
 from core.abstract_source import AbstractSource
-from twitter.buffer import TwitterBuffer
+from twitter.buffer import Buffer
 from twitter.tweet import Tweet
 
 log = logging.getLogger(__name__)
@@ -39,7 +39,7 @@ class BearerTokenAuth(AuthBase):
         return r
 
 
-class TwitterSource(AbstractSource):
+class Source(AbstractSource):
     STREAM_URL = "https://api.twitter.com/labs/1/tweets/stream/sample"
     BUFFER_SIZE = 500 * 10  # (~120 seconds)
     NAME = "twitter"
@@ -48,7 +48,7 @@ class TwitterSource(AbstractSource):
         self.key = config["consumer_key"]
         self.secret = config["consumer_secret"]
         self.tweet_interval = config["tweet_interval"]
-        self.buffer = TwitterBuffer(self.BUFFER_SIZE)
+        self.buffer = Buffer(self.BUFFER_SIZE)
         self.response = None
         super().__init__()
 

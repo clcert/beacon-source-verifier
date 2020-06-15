@@ -2,14 +2,14 @@ import logging
 from collections import OrderedDict
 from typing import List
 
-from seismology.seism import Seism
+from earthquake.event import Event
 
 log = logging.getLogger(__name__)
 
 # TODO: extract buffers from each source and use them 
 
 
-class SeismBuffer:
+class Buffer:
     def __init__(self, size: int):
         self.buffer = OrderedDict()
         self.size = size
@@ -17,7 +17,7 @@ class SeismBuffer:
     def __len__(self):
         return len(self.buffer)
 
-    def add(self, item: Seism) -> None:
+    def add(self, item: Event) -> None:
         self.buffer[item.get_marker()] = item
         if len(self.buffer) > self.size:
             self.buffer.popitem(False)
@@ -37,6 +37,6 @@ class SeismBuffer:
         log.debug(f"marker {marker} not found...")
         return False
 
-    def get_first(self) -> Seism:
-        k, v = self.buffer.popitem(False)
+    def get_first(self) -> Event:
+        _, v = self.buffer.popitem(False)
         return v

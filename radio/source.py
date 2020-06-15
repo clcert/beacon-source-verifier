@@ -2,13 +2,13 @@ import asyncio
 import logging
 
 from core.abstract_source import AbstractSource
-from radio.buffer import RadioBuffer
-from radio.mp3_frame import Frame
+from radio.buffer import Buffer
+from radio.frame import Frame
 
 log = logging.getLogger(__name__)
 
 
-class RadioSource(AbstractSource):
+class Source(AbstractSource):
     BUFFER_SIZE = 26 * 1000 * 2 * 5
     FRAMES_NUM = 300
     NAME = "radio"
@@ -17,7 +17,7 @@ class RadioSource(AbstractSource):
         self.url = config["url"]
         self.port = config["port"]
         self.prefix = config["prefix"]
-        self.buffer = RadioBuffer(self.BUFFER_SIZE)
+        self.buffer = Buffer(self.BUFFER_SIZE)
         super().__init__()
 
     async def verify(self, params: map) -> map:

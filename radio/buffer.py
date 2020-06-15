@@ -2,12 +2,12 @@ import logging
 from collections import OrderedDict
 from typing import List
 
-from radio.mp3_frame import Frame
+from radio.frame import Frame
 
 log = logging.getLogger(__name__)
 
 
-class RadioBuffer:
+class Buffer:
     def __init__(self, size: int):
         self.buffer = OrderedDict()
         self.size = size
@@ -41,7 +41,7 @@ class RadioBuffer:
             return []
         else:
             res: List[Frame] = []
-            for i in range(size):
-                k, v = self.buffer.popitem(False)
+            for _ in range(size):
+                _, v = self.buffer.popitem(False)
                 res.append(v)
             return res

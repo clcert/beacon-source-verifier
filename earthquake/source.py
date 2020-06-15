@@ -4,30 +4,31 @@ import logging
 from typing import List
 from bs4 import BeautifulSoup
 import asyncio
+from urllib.parse import urljoin
 
 import requests
 from requests.auth import AuthBase
 
 from core.abstract_source import AbstractSource
-from seismology.buffer import SeismBuffer
-from seismology.seism import Seism
+from earthquake.buffer import Buffer
+from earthquake.event import Event
 
 log = logging.getLogger(__name__)
 
 
-class SeismSource(AbstractSource):
+class Source(AbstractSource):
     BUFFER_SIZE = 500 * 10  # (~120 seconds)
-    NAME = "seismology"
+    NAME = "earthquake"
 
     def __init__(self, config: map):
         self.source_url = config["source_url"]
         self.fetch_interval = config["fetch_interval"]
-        self.buffer = SeismBuffer(100)
+        self.buffer = Buffer(100)
         self.running = False
         super().__init__()
 
     async def verify(self, params: map) -> map:
-        seism = self.buffer.get_last()
+        seism = self.buffer.get_first()
         d = seism.get_raw_data()
         log.debug(f"Comparing our seism data with event data:")
         d_hex = d.hex()
@@ -44,8 +45,8 @@ class SeismSource(AbstractSource):
             res = requests.get(self.source_url)
             soup = BeautifulSoup(res.content, 'html.parser')
             trs = soup.find_all("tr")[1:]
-            if len(trs) > 0:
-                seism = parse_seism(trs[0])
+            if len(trs) != 0:
+                seism = self.parse_seism(trs[0])
                 if seism is not None:
                     self.buffer.add(seism)
                 else:
@@ -61,14 +62,23 @@ class SeismSource(AbstractSource):
         self.running = False
 
 
-def parse_seism(tr):
-    tds = tr.find_all("td")
-    if len(tds) < 8:
-        return None
-    url = tds[0].find("a", href=True)
-    id = url.attrs["href"].split("/")[-1].split(".html")[0]
-    string_data = [id]
-    for td in tds[1:-1]: # ignoring id and reference
-        string_data.append(td.text)
-    return Seism(*string_data)
-    
+    def parse_seism(self, tr):
+        tds = tr.find_all("td")
+        if len(tds) != 8:
+            return None
+        url = urljoin(self.source_url, tds[0].find("a", href=True).attrs["href"])
+        # Getting data from that URL:
+        res = requests.get(url)
+        soup = BeautifulSoup(res.content, 'html.parser')
+        child_tds = soup.find_all("td")
+        if len(child_tds) != 14:
+            return None
+        id = url.split("/")[-1].split(".html")[0]
+        string_data = [id]
+        for i in range(3, len(child_tds) - 2, 2): # skipping local time and last td
+            string_data.append(child_tds[i].text)
+        # we need to strip magnitude unit and source from magnitude field
+        string_data[-1] = string_data[-1].split(" ")[0]
+        # we need to strip depth unit from depth field
+        string_data[-2] = string_data[-2].split(" ")[0]
+        return Event(*string_data)  

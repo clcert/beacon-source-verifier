@@ -1,1 +1,1 @@
-__all__ = ["mp3_frame", "source"]
+__all__ = ["frame", "source"]

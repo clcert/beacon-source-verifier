@@ -8,7 +8,7 @@ from twitter.tweet import Tweet
 log = logging.getLogger(__name__)
 
 
-class TwitterBuffer:
+class Buffer:
     def __init__(self, size: int):
         self.buffer = []
         self.size = size

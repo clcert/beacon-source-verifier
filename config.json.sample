@@ -18,7 +18,7 @@
       "consumer_secret": "xxx",
       "tweet_interval": 10
     },
-    "seismology": {
+    "earthquake": {
       "source_url": "http://sismologia.cl/links/ultimos_sismos.html",
       "fetch_interval": 8
     }
