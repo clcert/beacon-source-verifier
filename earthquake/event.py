@@ -13,7 +13,7 @@ class Event:
         self.magnitude = magnitude
 
     def get_raw_data(self) -> bytes:
-        return (self.id + self.datestr + self.lat + self.long + self.depth + self.magnitude).encode()
+        return ";".join(self.get_tuple()).encode()
 
     def get_tuple(self):
         return self.id, self.datestr, self.lat, self.long, self.depth, self.magnitude
