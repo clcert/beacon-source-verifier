@@ -2,9 +2,10 @@ import logging
 from collections import OrderedDict
 from typing import List
 
-from earthquake.event import Event
+from ethereum.block import Block
 
 log = logging.getLogger(__name__)
+
 
 class Buffer:
     def __init__(self, size: int):
@@ -14,8 +15,11 @@ class Buffer:
     def __len__(self):
         return len(self.buffer)
 
-    def add(self, item: Event) -> None:
-        self.buffer[item.get_marker()] = item
+    def add(self, item: Block) -> None:
+        if item.get_marker() in self.buffer:
+            self.buffer[item.get_marker()].hashes.update(item.hashes)
+        else:
+            self.buffer[item.get_marker()] = item   
         if len(self.buffer) > self.size:
             self.buffer.popitem(False)
 
@@ -28,12 +32,12 @@ class Buffer:
                 if k == marker:
                     self.buffer[k] = v
                     self.buffer.move_to_end(k, False)
-                    log.debug(f"removed {i} elements before hash...")
+                    log.debug(f"removed {i} elements before marker...")
                     return True
                 i += 1
         log.debug(f"marker {marker} not found...")
         return False
 
-    def get_first(self) -> Event:
+    def get_first(self) -> Block:
         _, v = self.buffer.popitem(False)
         return v

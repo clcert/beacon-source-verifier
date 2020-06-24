@@ -7,6 +7,7 @@ from core.source_manager import SourceManager
 from radio.source import Source as RadioSource
 from twitter.source import Source as TwitterSource
 from earthquake.source import Source as SeismSource
+from ethereum.source import Source as EthereumSource
 
 config = {}
 
@@ -16,6 +17,7 @@ sources = [
     RadioSource,
 #    TwitterSource,
     SeismSource,
+    EthereumSource,
 ]
 
 if __name__ == "__main__":

@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 
 
 class Source(AbstractSource):
-    BUFFER_SIZE = 500 * 10  # (~120 seconds)
+    BUFFER_SIZE = 500 * 10 
     NAME = "earthquake"
 
     def __init__(self, config: map):
@@ -28,12 +28,13 @@ class Source(AbstractSource):
         super().__init__()
 
     async def verify(self, params: map) -> map:
-        seism = self.buffer.get_first()
-        d = seism.get_raw_data()
-        log.debug(f"Comparing our seism data with event data:")
-        d_hex = d.hex()
-        if d_hex == params["event"]:
-            return {self.name(): True}
+        if self.buffer.check_marker(params["metadata"]):
+            seism = self.buffer.get_first()
+            d = seism.get_raw_data()
+            log.debug(f"Comparing our seism data with event data:")
+            d_hex = d.hex()
+            if d_hex == params["event"]:
+                return {self.name(): True}
         return {self.name(): False}
 
     async def init_collector(self) -> None:

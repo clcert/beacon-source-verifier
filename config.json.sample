@@ -21,6 +21,13 @@
     "earthquake": {
       "source_url": "http://sismologia.cl/links/ultimos_sismos.html",
       "fetch_interval": 8
+    },
+    "ethereum": {
+      "infura_token": "xxx",
+      "etherscan_token": "xxx",
+      "rivet_token": "xxx",
+      "threshold": 1
     }
+
   }
 }
