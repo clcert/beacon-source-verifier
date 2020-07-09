@@ -93,16 +93,17 @@ class Source(AbstractSource):
         EtherScan,
         Rivet
     ]
-
     def __init__(self, config: map):
         self.sources = {}
         self.buffers = {} 
-        for api in Source.REGISTERED_APIS:
-            self.sources[api.NAME] = api(config[f"{api.NAME}_token"])
-            self.buffers[api.NAME] = Buffer(Source.BUFFER_SIZE)
         self.running = False
         self.fetch_interval = 5
         self.threshold = config["threshold"]
+        for api in Source.REGISTERED_APIS:
+            token = config.get(f"{api.NAME}_token", None)
+            if token is not None:
+                self.sources[api.NAME] = api(token)
+                self.buffers[api.NAME] = Buffer(Source.BUFFER_SIZE)
         super().__init__()
 
     async def verify(self, params: map) -> map:
