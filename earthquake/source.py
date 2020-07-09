@@ -29,11 +29,10 @@ class Source(AbstractSource):
 
     async def verify(self, params: map) -> map:
         if self.buffer.check_marker(params["metadata"]):
-            seism = self.buffer.get_first()
-            d = seism.get_raw_data()
-            log.debug(f"Comparing our seism data with event data:")
-            d_hex = d.hex()
-            if d_hex == params["event"]:
+            our_event = self.buffer.get_first()
+            their_event = parse_json_event(params["event"])
+            log.debug(f"Comparing our event data with their event data:")
+            if our_event == their_event:
                 return {self.name(): True}
         return {self.name(): False}
 
@@ -83,3 +82,7 @@ class Source(AbstractSource):
         # we need to strip depth unit from depth field
         string_data[-2] = string_data[-2].split(" ")[0]
         return Event(*string_data)  
+
+def parse_json_event(str_event: str) -> Event:
+    ev = json.loads(str_event)
+    return Event(ev["id"], ev["utc"], ev["latitude"], ev["longitude"], ev["depth"], ev["magnitude"])

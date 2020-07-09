@@ -22,4 +22,4 @@ class Event:
         return self.get_tuple() == other.get_tuple()
 
     def get_marker(self) -> str:
-        return hashlib.sha3_512(self.get_raw_data()).hexdigest()
+        return self.id

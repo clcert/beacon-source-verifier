@@ -6,7 +6,7 @@ import sys
 from core.source_manager import SourceManager
 from radio.source import Source as RadioSource
 from twitter.source import Source as TwitterSource
-from earthquake.source import Source as SeismSource
+from earthquake.source import Source as EarthquakeSource
 from ethereum.source import Source as EthereumSource
 
 config = {}
@@ -16,8 +16,8 @@ log = logging.getLogger(__name__)
 sources = [
     RadioSource,
 #    TwitterSource,
-    SeismSource,
-    EthereumSource,
+    EarthquakeSource,
+#    EthereumSource,
 ]
 
 if __name__ == "__main__":
