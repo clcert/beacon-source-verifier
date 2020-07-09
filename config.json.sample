@@ -9,20 +9,24 @@
   "collector_stop_timeout": 10,
   "sources": {
     "radio": {
+      "enabled": true,
       "url": "200.89.71.21",
       "port": "8000",
       "prefix": "00"
     },
     "twitter": {
+      "enabled": true,
       "consumer_key": "xxx",
       "consumer_secret": "xxx",
       "tweet_interval": 10
     },
     "earthquake": {
+      "enabled": true,
       "source_url": "http://sismologia.cl/links/ultimos_sismos.html",
       "fetch_interval": 8
     },
     "ethereum": {
+      "enabled": true,
       "infura_token": "xxx",
       "etherscan_token": "xxx",
       "rivet_token": "xxx",

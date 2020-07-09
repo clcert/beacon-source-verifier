@@ -15,9 +15,9 @@ log = logging.getLogger(__name__)
 
 sources = [
     RadioSource,
-#    TwitterSource,
+    TwitterSource,
     EarthquakeSource,
-#    EthereumSource,
+    EthereumSource,
 ]
 
 if __name__ == "__main__":
@@ -45,8 +45,9 @@ if __name__ == "__main__":
             log.error(f"cannot find config for source {source.NAME}")
             exit(1)
         source_config = config["sources"][source.NAME]
-        source_instance = source(source_config)
-        sourceManager.add_source(source_instance)
+        if source_config.get("enabled", False):
+            source_instance = source(source_config)
+            sourceManager.add_source(source_instance)
     try:
         sourceManager.start_collection()
         asyncio.run(sourceManager.run_verification())
