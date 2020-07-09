@@ -17,7 +17,11 @@ from ethereum.block import Block
 log = logging.getLogger(__name__)
 
 
-class ApiErrorException(Exception):
+class APIException(Exception):
+    def __init__(self, error):
+        self.err = error
+
+class NotEnoughAPIsException(Exception):
     def __init__(self, error):
         self.err = error
 
@@ -37,7 +41,7 @@ class Infura():
             "id": "1",
         })
         if r.status_code != 200:
-            raise ApiErrorException(r.json())
+            raise APIException(r.json())
         r_json = r.json()["result"]
         id = int(r_json["number"], 16)
         ancestor = Block(id-1, [uncle[2:] for uncle in r_json["uncles"]])
@@ -54,7 +58,7 @@ class EtherScan():
     def get_latest_block(self) -> Block:
         r = requests.get(self.url.format(self.token))
         if r.status_code != 200:
-            raise ApiErrorException(r.json())
+            raise APIException(r.json())
         r_json = r.json()["result"]
         id = int(r_json["number"], 16)
         ancestor = Block(id-1, [uncle[2:] for uncle in r_json["uncles"]])
@@ -77,7 +81,7 @@ class Rivet():
             "id": "1",
         })
         if r.status_code != 200:
-            raise ApiErrorException(r.json())
+            raise APIException(r.json())
         r_json = r.json()["result"]
         id = int(r_json["number"], 16)
         ancestor = Block(id-1, [uncle[2:] for uncle in r_json["uncles"]])
@@ -98,12 +102,14 @@ class Source(AbstractSource):
         self.buffers = {} 
         self.running = False
         self.fetch_interval = 5
-        self.threshold = config["threshold"]
+        self.threshold = max(config.get("threshold", 1),1)
         for api in Source.REGISTERED_APIS:
             token = config.get(f"{api.NAME}_token", None)
             if token is not None:
                 self.sources[api.NAME] = api(token)
                 self.buffers[api.NAME] = Buffer(Source.BUFFER_SIZE)
+        if len(self.sources) < self.threshold:
+            raise NotEnoughAPIsException()
         super().__init__()
 
     async def verify(self, params: map) -> map:
