@@ -33,13 +33,13 @@ class Infura():
         self.url = "https://mainnet.infura.io/v3/"
         self.token = token
 
-    def get_latest_block(self) -> Block:
+    def get_latest_block(self, timeout=0) -> Block:
         r = requests.post(self.url + self.token, json={
             "jsonrpc": "2.0",
             "method": "eth_getBlockByNumber",
             "params": ["latest", False],
             "id": "1",
-        })
+        }, timeout=timeout)
         if r.status_code != 200:
             raise APIException(r.json())
         r_json = r.json()["result"]
@@ -56,8 +56,8 @@ class EtherScan():
         self.url = "https://api.etherscan.io/api?module=proxy&action=eth_getBlockByNumber&tag=latest&boolean=false&apikey={}"
         self.token = token
 
-    def get_latest_block(self) -> Block:
-        r = requests.get(self.url.format(self.token))
+    def get_latest_block(self, timeout=0) -> Block:
+        r = requests.get(self.url.format(self.token), timeout=timeout)
         if r.status_code != 200:
             raise APIException(r.json())
         r_json = r.json()["result"]
@@ -74,13 +74,13 @@ class Rivet():
         self.url = "https://{}.eth.rpc.rivet.cloud/"
         self.token = token
 
-    def get_latest_block(self) -> Block:
+    def get_latest_block(self, timeout=0) -> Block:
         r = requests.post(self.url.format(self.token), json={
             "jsonrpc": "2.0",
             "method": "eth_getBlockByNumber",
             "params": ["latest", False],
             "id": "1",
-        })
+        }, timeout=timeout)
         if r.status_code != 200:
             raise APIException(r.json())
         r_json = r.json()["result"]
@@ -135,16 +135,17 @@ class Source(AbstractSource):
         self.running = True
 
     async def collect(self) -> None:
+        timeout = self.fetch_interval//len(self.sources)
         while self.running:
             start_time = datetime.now()
             for api in self.sources.values():
-                log.debug(f"Fetching latest ethereum block from {api.NAME}")
+                log.debug(f"Fetching latest ethereum block from {api.NAME} (timeout: {timeout})")
                 try:
-                    block, ancestor = api.get_latest_block()
+                    block, ancestor = api.get_latest_block(timeout)
                     self.buffers[api.NAME].add(ancestor)
                     self.buffers[api.NAME].add(block)
                 except Exception as e:
-                    log.debug(f"error getting block from {api.NAME}: {e}")
+                    log.error(f"error getting block from {api.NAME}: {e}")
             wait_time = max(0, self.fetch_interval -
                             (datetime.now() - start_time).seconds)
             log.debug(f"waiting {wait_time} seconds to fetch again")

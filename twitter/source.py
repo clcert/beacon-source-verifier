@@ -41,7 +41,7 @@ class BearerTokenAuth(AuthBase):
 
 class Source(AbstractSource):
     STREAM_URL = "https://api.twitter.com/labs/1/tweets/stream/sample"
-    BUFFER_SIZE = 500 * 10  # (~120 seconds)
+    BUFFER_SIZE = 20000
     NAME = "twitter"
 
     def __init__(self, config: map):

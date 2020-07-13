@@ -51,8 +51,6 @@ class Source(AbstractSource):
     async def collect(self):
         frame = Frame()
         await frame.read(self.reader)
-        if frame.get_marker()[:len(self.prefix)] == self.prefix:
-            log.info(f"valid marker: {frame.get_marker()}")
         self.buffer.add(frame)
 
     async def finish_collector(self) -> None:
