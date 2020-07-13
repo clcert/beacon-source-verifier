@@ -27,9 +27,12 @@
     },
     "ethereum": {
       "enabled": true,
-      "infura_token": "xxx",
-      "etherscan_token": "xxx",
-      "rivet_token": "xxx",
+      "block_id_module": 2,
+      "tokens": {
+        "infura": "xxx",
+        "etherscan": "xxx",
+        "rivet": "xxx"
+      },
       "threshold": 1
     }
 
