@@ -93,7 +93,7 @@ class SourceManager:
         joined_map = {}
         for res in done:
             joined_map.update(res.result())
-        self.save_response(pulseID, joined_map)
+        self.save_response(pulseID, joined_map, is_latest=True)
 
     def get_params(self) -> map:
         """
@@ -114,7 +114,7 @@ class SourceManager:
             paramsMap[value["sourceName"]] = value
         return pulse["pulse"]["uri"], paramsMap
 
-    def save_response(self, pulse, sources):
+    def save_response(self, pulse, sources, is_latest=True):
         response = {
             "pulse": pulse,
             "valid": True,
@@ -127,4 +127,7 @@ class SourceManager:
         os.makedirs(folder, exist_ok=True)
         with open(f"{folder}/{pulse_splitted[3]}.json", 'w') as f:
             json.dump(response, f)
+        if is_latest:
+            with open(f"{folder}/latest.json", 'w') as latest_f:            
+                json.dump(response, latest_f)
         return response
