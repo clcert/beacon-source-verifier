@@ -84,35 +84,54 @@ class SourceManager:
         """
         Verifies a single pulse with all the enabled source verifiers.
         """
-        pulseID, params = self.get_params()
-        done, pending = await asyncio.wait(
-            {asyncio.create_task(source.verify(params[source.name()])) for source in self.sources},
-            timeout=self.verification_timeout)
-        for task in pending:
-            task.cancel()
-        joined_map = {}
-        for res in done:
-            joined_map.update(res.result())
-        self.save_response(pulseID, joined_map, is_latest=True)
+        results = {}
+        pulse_id = 0
+        for source in self.sources:
+            results[source.name()] = {"valid": False, "reason": "timeout"}
+        pulse_id, ext_value = self.get_latest_pulse()
+        try:
+            params = self.get_params(ext_value)
+            done, pending = await asyncio.wait(
+                {asyncio.create_task(source.verify(params[source.name()])) for source in self.sources},
+                timeout=self.verification_timeout)
+            for task in pending:
+                task.cancel()
+            for res in done:
+                try:
+                    result = res.result()
+                    results.update(result)
+                except Exception as e:
+                    logging.error(f"Error getting result from source: {e}")
+        except Exception as e:
+            logging.error(f"Error getting params for pulse {pulse_id}: {e}")
+        self.save_response(pulse_id, results, is_latest=True)
 
-    def get_params(self) -> map:
+    def get_latest_pulse(self) -> map:
         """
-        Returns a map with the verification params of the current pulse.
-        Each param is tagged with the respective source ID.
-        :return: pulse id and map with params
+        Returns the latest pulse id from the beacon and the external value.
+        :return: latest pulse id and external value
         """
         pulse_req = requests.get(f"{self.base_api}/pulse/last")
         if pulse_req.status_code != 200:
             raise BeaconAPIException(f"Pulse API answered with non-200 code: {pulse_req.status_code}")
         pulse = pulse_req.json()
-        extValues_req = requests.get(f"{self.base_api}/extValue/{pulse['pulse']['external']['value']}")
+        return pulse["pulse"]["uri"], pulse['pulse']['external']['value']
+
+
+    def get_params(self, pulse_value: str) -> map:
+        """
+        Returns a map with the verification params of the external value provided.
+        Each param is tagged with the respective source ID.
+        :return: map with params
+        """
+        extValues_req = requests.get(f"{self.base_api}/extValue/{pulse_value}")
         if extValues_req.status_code != 200:
             raise BeaconAPIException(f"ExtValue API answered with non-200 code: {extValues_req.status_code}")
         extValues = extValues_req.json()["eventsCollected"]
         paramsMap = {}
         for value in extValues:
             paramsMap[value["sourceName"]] = value
-        return pulse["pulse"]["uri"], paramsMap
+        return paramsMap
 
     def save_response(self, pulse, sources, is_latest=True):
         response = {

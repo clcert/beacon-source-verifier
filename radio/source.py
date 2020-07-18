@@ -21,8 +21,10 @@ class Source(AbstractSource):
         super().__init__()
 
     async def verify(self, params: map) -> map:
+        reason = ""
+        valid = False
         if params["metadata"][:len(self.prefix)] != self.prefix:
-            log.error(f"wrong marker. It should start with \"{self.prefix}\"")
+            reason = f"wrong marker in pulse metadata. prefix=\"{self.prefix}\""
         else:
             if self.buffer.check_marker(params["metadata"]):
                 while len(self.buffer) < self.FRAMES_NUM:
@@ -37,8 +39,15 @@ class Source(AbstractSource):
                 log.debug(f"Data joined, comparing with event data:")
                 d_hex = d.hex()
                 if d_hex == params["event"]:
-                    return {self.name(): True}
-        return {self.name(): False}
+                    valid = True
+                else:
+                    reason = f"event value does not match. ours={d_hex} theirs={params['event']}"
+            else:
+                reason =  f"metadata \"{params['metadata']}\" not found. buffer_size={len(self.buffer)}"
+        return {self.name(): {
+            "valid": valid,
+            "reason": reason
+        }}
 
     async def init_collector(self) -> None:
         self.reader, self.writer = await asyncio.open_connection(self.url, self.port)

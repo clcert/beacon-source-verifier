@@ -29,7 +29,8 @@ class BearerTokenAuth(AuthBase):
             headers={"User-Agent": "TwitterDevSampledStreamQuickStartPython"})
 
         if response.status_code != 200:
-            raise Exception(f"Cannot get a Bearer token (HTTP %d): %s" % (response.status_code, response.text))
+            raise Exception(f"Cannot get a Bearer token (HTTP %d): %s" % (
+                response.status_code, response.text))
 
         body = response.json()
         return body['access_token']
@@ -53,33 +54,43 @@ class Source(AbstractSource):
         super().__init__()
 
     async def verify(self, params: map) -> map:
-        equal = False
-        log.error(f"Checking twitter buffer... (length: {len(self.buffer)})")
+        valid = False
+        reason = ""
+        log.info(f"Checking twitter buffer... (length: {len(self.buffer)})")
         their_list = parse_tweet_list(params["event"])
         start_date = datetime.datetime.fromisoformat(params["metadata"][:-1])
         end_date = start_date + datetime.timedelta(seconds=10)
         if self.buffer.check_marker(start_date):
             our_list = self.buffer.get_list(end_date)
             if len(our_list) == len(their_list):
-                equal = True
+                valid = True
                 for ours, theirs in zip(our_list, their_list):
                     if ours != theirs:
-                        log.error(f"different lists!  ours: {ours} theirs: {theirs}")
-                        equal = False
+                        reason = f"different list item on current position. ours=[{ours}] theirs=[{theirs}]"
+                        valid = False
                         break
-        return {self.name(): equal}
+            else:
+                reason = f"length mismatch between our and their tweet list. ours_size={len(our_list)} theirs_size={len(their_list)}"
+        else:
+            reason = f"metadata \"{params['metadata']}\" not found. buffer_size={len(self.buffer)}"
+        return {self.name(): {
+            "valid": valid,
+            "reason": reason
+        }}
 
     async def init_collector(self) -> None:
         bearer_token = BearerTokenAuth(self.key, self.secret)
         self.response = requests.get(self.STREAM_URL, auth=bearer_token,
-                                     headers={"User-Agent": "RandomVerifier-Python"},
+                                     headers={
+                                         "User-Agent": "RandomVerifier-Python"},
                                      stream=True)
 
     async def collect(self) -> None:
         for response_line in self.response.iter_lines():
             if response_line:
                 t = json.loads(response_line)["data"]
-                self.buffer.add(Tweet(t["id"], t["created_at"], t["author_id"], t["text"]))
+                self.buffer.add(
+                    Tweet(t["id"], t["created_at"], t["author_id"], t["text"]))
         print("collector ended :(")
 
     async def finish_collector(self) -> None:
@@ -91,7 +102,8 @@ def parse_tweet_list(tweet_list: str) -> List[Tweet]:
     try:
         tweet_json_list = json.loads(tweet_list)
         for t in tweet_json_list:
-            tweets.append(Tweet(t["id"], t["created_at"], t["author_id"], t["text"]))
+            tweets.append(Tweet(t["id"], t["created_at"],
+                                t["author_id"], t["text"]))
     except Exception as e:
         log.error(f"cannot parse tweet list: {e}")
     return tweets

@@ -116,20 +116,35 @@ class Source(AbstractSource):
         super().__init__()
 
     async def verify(self, params: map) -> map:
+        valid = False
+        reason = ""
         block_num = int(params["metadata"], 16)
         if block_num % self.block_id_module == 0:
             correct = 0
-            for _, buffer in self.buffers.items():
+            errors = []
+            for k, buffer in self.buffers.items():
                 if buffer.check_marker(block_num):
                     block = buffer.get_first()
                     if params["event"] in block.hashes:
                         correct += 1
+                    else:
+                        error = f"block hash not found in block generation. block_number={block_num} block_hash={params['event']} source_name={k} source_buffer_length={len(buffer)}"
+                        errors.append(error)
+                        logging.debug(error)
+                else:
+                    error = f"block number not found on buffer. block_number={block_num} source_name={k} source_buffer_length={len(buffer)}"
+                    errors.append(error)
+                    logging.debug(error)
             if correct >= self.threshold:
-                return {self.name(): True}
+                valid = True
+            else:
+                reason = f"not enough valid nodes to verify. total_nodes={len(self.buffers)} threshold={self.threshold} correct={correct} errors=[{','.join(errors)}]"
         else:
-            log.debug(f"Beacon reported an invalid block ID as randomness source.\
-             It should have been divisible by {self.block_id_module}")
-        return {self.name(): False}
+            reason = f"beacon reported an invalid block number as randomness source. module={self.block_id_module} block_id={block_num}"
+        return {self.name(): {
+            "valid": valid,
+            "reason": reason
+        }}
 
     async def init_collector(self) -> None:
         self.running = True
@@ -139,7 +154,8 @@ class Source(AbstractSource):
         while self.running:
             start_time = datetime.now()
             for api in self.sources.values():
-                log.debug(f"Fetching latest ethereum block from {api.NAME} (timeout: {timeout})")
+                log.debug(
+                    f"Fetching latest ethereum block from {api.NAME} (timeout: {timeout})")
                 try:
                     block, ancestor = api.get_latest_block(timeout)
                     self.buffers[api.NAME].add(ancestor)

@@ -28,13 +28,24 @@ class Source(AbstractSource):
         super().__init__()
 
     async def verify(self, params: map) -> map:
+        reason = ""
+        valid = False
         if self.buffer.check_marker(params["metadata"]):
             our_event = self.buffer.get_first()
             their_event = parse_json_event(params["event"])
             log.debug(f"Comparing our event data with their event data:")
             if our_event == their_event:
-                return {self.name(): True}
-        return {self.name(): False}
+                valid = True
+            else:
+                reason = f"event value does not match. ours={our_event} theirs={their_event}"
+        else:
+            reason = f"metadata \"{params['metadata']}\" not found. buffer_size={len(self.buffer)}"
+        return {
+            self.name(): {
+                "valid": valid,
+                "reason": reason
+                }
+            }
 
     async def init_collector(self) -> None:
         self.running = True
