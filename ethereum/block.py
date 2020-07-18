@@ -13,3 +13,6 @@ class Block:
 
     def get_marker(self) -> str:
         return self.number
+
+    def __str__(self) -> str:
+        return f"Block<number={self.number},hashes={self.hashes}>"

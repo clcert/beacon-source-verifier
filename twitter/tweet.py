@@ -18,3 +18,6 @@ class Tweet:
 
     def __eq__(self, other):
         return self.get_tuple() == other.get_tuple()
+
+    def __str__(self) -> str:
+        return f"Tweet<id={self.id},date={self.datestr},author={self.author},message={self.message}>"

@@ -136,3 +136,6 @@ class Frame:
             new_data = await reader.read(to_read)
             to_read -= len(new_data)
             self.data += new_data
+
+    def __str__(self) -> str:
+        return f"Frame<hash={self.get_marker()}>"

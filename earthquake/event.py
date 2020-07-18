@@ -23,3 +23,6 @@ class Event:
 
     def get_marker(self) -> str:
         return self.id
+
+    def __str__(self) -> str:
+        return f"Event<id={self.id},date={self.datestr},lat={self.lat},long={self.long},depth={self.depth},magnitude={self.magnitude}>"

@@ -103,7 +103,7 @@ class Source(AbstractSource):
         self.sources = {}
         self.buffers = {}
         self.running = False
-        self.fetch_interval = 5
+        self.fetch_interval = 6
         self.threshold = max(config.get("threshold", 1), 1)
         self.block_id_module = config.get("block_id_module", 1)
         for api in Source.REGISTERED_APIS:
