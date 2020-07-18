@@ -130,11 +130,11 @@ class Source(AbstractSource):
                     else:
                         error = f"block hash not found in block generation. block_number={block_num} block_hash={params['event']} source_name={k} source_buffer_length={len(buffer)}"
                         errors.append(error)
-                        logging.debug(error)
+                        log.debug(error)
                 else:
                     error = f"block number not found on buffer. block_number={block_num} source_name={k} source_buffer_length={len(buffer)}"
                     errors.append(error)
-                    logging.debug(error)
+                    log.debug(error)
             if correct >= self.threshold:
                 valid = True
             else:

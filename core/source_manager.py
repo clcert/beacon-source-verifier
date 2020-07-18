@@ -101,9 +101,9 @@ class SourceManager:
                     result = res.result()
                     results.update(result)
                 except Exception as e:
-                    logging.error(f"Error getting result from source: {e}")
+                    log.error(f"Error getting result from source: {e}")
         except Exception as e:
-            logging.error(f"Error getting params for pulse {pulse_id}: {e}")
+            log.error(f"Error getting params for pulse {pulse_id}: {e}")
         self.save_response(pulse_id, results, is_latest=True)
 
     def get_latest_pulse(self) -> map:
