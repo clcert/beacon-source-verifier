@@ -15,6 +15,12 @@ from earthquake.event import Event
 
 log = logging.getLogger(__name__)
 
+class SeismParsingException(Exception):
+    def __init__(self, reason):
+        self.reason = reason
+
+    def __str__(self):
+        return f"SeismParsingException: {self.reason}"
 
 class Source(AbstractSource):
     BUFFER_SIZE = 5
@@ -58,11 +64,10 @@ class Source(AbstractSource):
             trs = soup.find_all("tr")[1:]
             if len(trs) != 0:
                 for tr in trs[:self.BUFFER_SIZE]:
-                    seism = self.parse_seism(tr)
-                    if seism is not None:
-                        self.buffer.add(seism)
-                    else:
-                        log.debug(f"Cannot parse last seism")
+                    try:
+                        seism = self.parse_seism(tr)
+                    except Exception as e:
+                        log.error(f"Error parsing seism: {e}")
             else:
                 log.error(f"cannot get seism list")
             wait_time = max(0, self.fetch_interval - (datetime.now() - start_time).seconds)
@@ -77,14 +82,14 @@ class Source(AbstractSource):
     def parse_seism(self, tr):
         tds = tr.find_all("td")
         if len(tds) != 8:
-            return None
+            raise SeismParsingException(f"not enough columns in seism summary page. seism={url}")
         url = urljoin(self.source_url, tds[0].find("a", href=True).attrs["href"])
         # Getting data from that URL:
         res = requests.get(url)
         soup = BeautifulSoup(res.content, 'html.parser')
         child_tds = soup.find_all("td")
         if len(child_tds) != 14:
-            return None
+            raise SeismParsingException(f"not enough fields in seism page. seism={url}")
         id = url.split("/")[-1].split(".html")[0]
         event_data = {
             "id" :id,
