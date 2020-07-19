@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 
 
 class Source(AbstractSource):
-    BUFFER_SIZE = 500 * 10 
+    BUFFER_SIZE = 5
     NAME = "earthquake"
 
     def __init__(self, config: map):
@@ -57,11 +57,12 @@ class Source(AbstractSource):
             soup = BeautifulSoup(res.content, 'html.parser')
             trs = soup.find_all("tr")[1:]
             if len(trs) != 0:
-                seism = self.parse_seism(trs[0])
-                if seism is not None:
-                    self.buffer.add(seism)
-                else:
-                    log.debug(f"Cannot parse last seism")
+                for tr in trs[:self.BUFFER_SIZE]:
+                    seism = self.parse_seism(tr)
+                    if seism is not None:
+                        self.buffer.add(seism)
+                    else:
+                        log.debug(f"Cannot parse last seism")
             else:
                 log.error(f"cannot get seism list")
             wait_time = max(0, self.fetch_interval - (datetime.now() - start_time).seconds)
@@ -85,14 +86,15 @@ class Source(AbstractSource):
         if len(child_tds) != 14:
             return None
         id = url.split("/")[-1].split(".html")[0]
-        string_data = [id]
-        for i in range(3, len(child_tds) - 2, 2): # skipping local time and last td
-            string_data.append(child_tds[i].text)
-        # we need to strip magnitude unit and source from magnitude field
-        string_data[-1] = string_data[-1].split(" ")[0]
-        # we need to strip depth unit from depth field
-        string_data[-2] = string_data[-2].split(" ")[0]
-        return Event(*string_data)  
+        event_data = {
+            "id" :id,
+            "date": child_tds[3].text,
+            "lat": child_tds[5].text,
+            "long": child_tds[7].text,
+            "depth": child_tds[9].text.split(" ")[0],
+            "magnitude": child_tds[11].text.split(" ")[0],
+        }
+        return Event(**event_data)  
 
 def parse_json_event(str_event: str) -> Event:
     ev = json.loads(str_event)

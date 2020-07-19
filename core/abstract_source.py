@@ -23,7 +23,6 @@ class AbstractSource(metaclass=ABCMeta):
         Executes this collector indefinitely
         :return:
         """
-        log.info(f"Starting {self.name()} loop...")
         asyncio.set_event_loop(self.loop)
         self.loop.run_forever()
 
@@ -32,7 +31,7 @@ class AbstractSource(metaclass=ABCMeta):
         Executes asynchronous collection of events from the source
         """
         while True:
-            log.info(f"Starting collector {self.name()}...")
+            log.info(f"Starting {self.name()} collector...")
             try:
                 await self.init_collector()
                 while not self.stop_event.is_set():

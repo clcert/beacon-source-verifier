@@ -43,7 +43,7 @@ class SourceManager:
         Starts collection of events indefinitely
         :return:
         """
-        log.debug(f"Starting collectors: {[source.name() for source in self.sources]}")
+        log.info(f"Starting collectors: {[source.name() for source in self.sources]}")
         self.threads = [source.thread.start() for source in self.sources]
         self.collector_futures.update(
             [asyncio.run_coroutine_threadsafe(source.run_collector(), source.loop) for source in self.sources])

@@ -56,21 +56,38 @@ class Source(AbstractSource):
     async def verify(self, params: map) -> map:
         valid = False
         reason = ""
-        log.info(f"checking twitter buffer... (length: {len(self.buffer)})")
+        log.debug(f"checking twitter buffer... (length: {len(self.buffer)})")
         their_list = parse_tweet_list(params["event"])
         start_date = datetime.datetime.fromisoformat(params["metadata"][:-1])
         end_date = start_date + datetime.timedelta(seconds=10)
         if self.buffer.check_marker(start_date):
             our_list = self.buffer.get_list(end_date)
-            if len(our_list) == len(their_list):
-                valid = True
-                for ours, theirs in zip(our_list, their_list):
-                    if ours != theirs:
-                        reason = f"different list item on current position. ours=[{ours}] theirs=[{theirs}]"
-                        valid = False
-                        break
-            else:
-                reason = f"length mismatch between our and their tweet list. ours_size={len(our_list)} theirs_size={len(their_list)}"
+            valid = True
+            i, j = 0, 0
+            our_uniq, their_uniq = [], []
+            while i < len(our_list) and j < len(their_list):
+                ours = our_list[i]
+                theirs = their_list[j]
+                if ours < theirs:
+                    our_uniq.append(ours)
+                    i += 1
+                elif theirs < ours:
+                    their_uniq.append(theirs)
+                    j += 1
+                else:
+                    i += 1
+                    j += 1
+            while i < len(our_list):
+                ours = our_list[i]
+                our_uniq.append(ours)
+                i += 1
+            while j < len(their_list):
+                theirs = their_list[j]
+                their_uniq.append(theirs)
+                j += 1
+            if len(our_uniq) > 0 or len(their_uniq) > 0:
+                reason = f"Some items are not on both lists. our_uniq=[{our_uniq}] their_uniq=[{their_uniq}]"
+                valid = False
         else:
             reason = f"metadata \"{params['metadata']}\" not found. buffer_size={len(self.buffer)}"
         return {self.name(): {

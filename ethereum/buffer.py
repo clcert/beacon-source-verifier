@@ -39,7 +39,9 @@ class Buffer:
         return False
 
     def get_first(self) -> Block:
-        _, v = self.buffer.popitem(False)
+        k, v = self.buffer.popitem(False)
+        self.buffer[k] = v
+        self.buffer.move_to_end(k, False)
         return v
 
     def __str__(self) -> str:
