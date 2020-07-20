@@ -23,28 +23,33 @@ class Source(AbstractSource):
     async def verify(self, params: map) -> map:
         reason = ""
         valid = False
-        their_prefix = params["metadata"][:len(self.prefix)]
-        if their_prefix != self.prefix:
-            reason = f"wrong marker in pulse metadata. our_prefix=\"{self.prefix}\" their_prefix=\"{their_prefix}\""
+        if params.get("metadata", "0") == "0":
+            reason = "empty metadata"
+        elif params.get("event", "0") == "0":
+            reason = "empty event"
         else:
-            if self.buffer.check_marker(params["metadata"]):
-                while len(self.buffer) < self.FRAMES_NUM:
-                    log.debug(
-                        f"we need {self.FRAMES_NUM} frames to generate randomness but we have {len(self.buffer)}, waiting 5 seconds...")
-                    await asyncio.sleep(5)
-                frames = self.buffer.get_list(self.FRAMES_NUM)
-                d = b''
-                log.debug(f"joining raw data from {len(frames)} frames...")
-                for frame in frames:
-                    d += frame.get_raw_data()
-                log.debug(f"Data joined, comparing with event data:")
-                d_hex = d.hex()
-                if d_hex == params["event"]:
-                    valid = True
-                else:
-                    reason = f"event value does not match. ours={d_hex} theirs={params['event']}"
+            their_prefix = params["metadata"][:len(self.prefix)]
+            if their_prefix != self.prefix:
+                reason = f"wrong marker in pulse metadata. our_prefix=\"{self.prefix}\" their_prefix=\"{their_prefix}\""
             else:
-                reason =  f"metadata \"{params['metadata']}\" not found. buffer_size={len(self.buffer)}"
+                if self.buffer.check_marker(params["metadata"]):
+                    while len(self.buffer) < self.FRAMES_NUM:
+                        log.debug(
+                            f"we need {self.FRAMES_NUM} frames to generate randomness but we have {len(self.buffer)}, waiting 5 seconds...")
+                        await asyncio.sleep(5)
+                    frames = self.buffer.get_list(self.FRAMES_NUM)
+                    d = b''
+                    log.debug(f"joining raw data from {len(frames)} frames...")
+                    for frame in frames:
+                        d += frame.get_raw_data()
+                    log.debug(f"Data joined, comparing with event data:")
+                    d_hex = d.hex()
+                    if d_hex == params["event"]:
+                        valid = True
+                    else:
+                        reason = f"event value does not match. ours={d_hex} theirs={params['event']}"
+                else:
+                    reason =  f"metadata \"{params['metadata']}\" not found. buffer_size={len(self.buffer)}"
         return {self.name(): {
             "valid": valid,
             "reason": reason

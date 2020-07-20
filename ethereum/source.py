@@ -118,29 +118,34 @@ class Source(AbstractSource):
     async def verify(self, params: map) -> map:
         valid = False
         reason = ""
-        block_num = int(params["metadata"], 16)
-        if block_num % self.block_id_module == 0:
-            correct = 0
-            errors = []
-            for k, buffer in self.buffers.items():
-                if buffer.check_marker(block_num):
-                    block = buffer.get_first()
-                    if params["event"] in block.hashes:
-                        correct += 1
+        if params.get("metadata", "0") == "0":
+            reason = "empty metadata"
+        elif params.get("event", "0") == "0":
+            reason = "empty event"
+        else:
+            block_num = int(params["metadata"], 16)
+            if block_num % self.block_id_module == 0:
+                correct = 0
+                errors = []
+                for k, buffer in self.buffers.items():
+                    if buffer.check_marker(block_num):
+                        block = buffer.get_first()
+                        if params["event"] in block.hashes:
+                            correct += 1
+                        else:
+                            error = f"block hash not found in block generation. block_number={block_num} block_hash={params['event']} source_name={k} source_buffer_length={len(buffer)} source_buffer={buffer}"
+                            errors.append(error)
+                            log.debug(error)
                     else:
-                        error = f"block hash not found in block generation. block_number={block_num} block_hash={params['event']} source_name={k} source_buffer_length={len(buffer)} source_buffer={buffer}"
+                        error = f"block number not found on buffer. block_number={block_num} source_name={k} source_buffer_length={len(buffer)} source_buffer={buffer}"
                         errors.append(error)
                         log.debug(error)
+                if correct >= self.threshold:
+                    valid = True
                 else:
-                    error = f"block number not found on buffer. block_number={block_num} source_name={k} source_buffer_length={len(buffer)} source_buffer={buffer}"
-                    errors.append(error)
-                    log.debug(error)
-            if correct >= self.threshold:
-                valid = True
+                    reason = f"not enough valid nodes to verify. total_nodes={len(self.buffers)} threshold={self.threshold} correct={correct} errors=[{','.join(errors)}]"
             else:
-                reason = f"not enough valid nodes to verify. total_nodes={len(self.buffers)} threshold={self.threshold} correct={correct} errors=[{','.join(errors)}]"
-        else:
-            reason = f"beacon reported an invalid block number as randomness source. module={self.block_id_module} block_id={block_num}"
+                reason = f"beacon reported an invalid block number as randomness source. module={self.block_id_module} block_id={block_num}"
         return {self.name(): {
             "valid": valid,
             "reason": reason

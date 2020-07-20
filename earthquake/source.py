@@ -36,7 +36,11 @@ class Source(AbstractSource):
     async def verify(self, params: map) -> map:
         reason = ""
         valid = False
-        if self.buffer.check_marker(params["metadata"]):
+        if params.get("metadata", "0") == "0":
+            reason = "empty metadata"
+        elif params.get("event", "0") == "0":
+            reason = "empty event"
+        elif self.buffer.check_marker(params["metadata"]):
             our_event = self.buffer.get_first()
             their_event = parse_json_event(params["event"])
             log.debug(f"Comparing our event data with their event data:")
