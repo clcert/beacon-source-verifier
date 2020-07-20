@@ -58,7 +58,7 @@ class Source(AbstractSource):
             }
 
     async def init_collector(self) -> None:
-        self.running = True
+        self.running = True 
 
     async def collect(self) -> None:
         while self.running:

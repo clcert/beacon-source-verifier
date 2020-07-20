@@ -79,7 +79,6 @@ class Source(AbstractSource):
                 if len(our_list) == 0:
                     reason = "our verifier reported an empty tweet list"
                 else:
-                    valid = True
                     i, j = 0, 0
                     our_uniq, their_uniq = [], []
                     while i < len(our_list) and j < len(their_list):
@@ -94,17 +93,12 @@ class Source(AbstractSource):
                         else:
                             i += 1
                             j += 1
-                    while i < len(our_list):
-                        ours = our_list[i]
-                        our_uniq.append(ours)
-                        i += 1
-                    while j < len(their_list):
-                        theirs = their_list[j]
-                        their_uniq.append(theirs)
-                        j += 1
+                    our_uniq.append(*our_list[i:])
+                    their_uniq.append(*their_list[j:])
                     if len(our_uniq) > 0 or len(their_uniq) > 0:
                         reason = f"Some items are not on both lists. our_interval={our_list[0].datestr}_{our_list[-1].datestr} their_interval={their_list[0].datestr}_{their_list[-1].datestr} our_uniq=[{','.join(our_uniq)}] their_uniq=[{','.join(their_uniq)}]"
-                        valid = False
+                    else: 
+                        valid = True
             else:
                 reason = f"metadata \"{params['metadata']}\" not found. buffer_size={len(self.buffer)}"
         return {self.name(): {
