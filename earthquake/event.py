@@ -26,3 +26,6 @@ class Event:
 
     def __str__(self) -> str:
         return f"Event<id={self.id},date={self.datestr},lat={self.lat},long={self.long},depth={self.depth},magnitude={self.magnitude}>"
+
+    def is_erb(self) -> bool:
+        return self.id.startswith("erb_")

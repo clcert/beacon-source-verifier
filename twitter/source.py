@@ -13,6 +13,14 @@ from twitter.tweet import Tweet
 log = logging.getLogger(__name__)
 
 
+class TwitterCollectorException(Exception):
+
+    def __init__(self, reason):
+        self.reason = reason
+
+    def __str__(self):
+        return f"TwitterCollectionException: {self.reason}"
+
 class BearerTokenAuth(AuthBase):
 
     def __init__(self, consumer_key, consumer_secret):
@@ -29,8 +37,7 @@ class BearerTokenAuth(AuthBase):
             headers={"User-Agent": "TwitterDevSampledStreamQuickStartPython"})
 
         if response.status_code != 200:
-            raise Exception(f"Cannot get a Bearer token (HTTP %d): %s" % (
-                response.status_code, response.text))
+            raise TwitterCollectorException(f"Cannot get a Bearer token (HTTP {response.status_code}): {response.text}")
 
         body = response.json()
         return body['access_token']
@@ -105,7 +112,10 @@ class Source(AbstractSource):
     async def collect(self) -> None:
         for response_line in self.response.iter_lines():
             if response_line:
-                t = json.loads(response_line)["data"]
+                resp = json.loads(response_line)
+                if "data" not in resp:
+                    raise TwitterCollectorException(f"{resp['title']}: {resp['detail']}")
+                t = resp["data"]
                 self.buffer.add(
                     Tweet(t["id"], t["created_at"], t["author_id"], t["text"]))
         print("collector ended :(")

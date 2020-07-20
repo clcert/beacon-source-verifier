@@ -37,3 +37,10 @@ class Buffer:
     def get_first(self) -> Event:
         _, v = self.buffer.popitem(False)
         return v
+
+    def __str__(self) -> str:
+        result = []
+        for k, v in self.buffer.items():
+            result.append(f"{k}={v}")
+        return f"EthBuffer<{','.join(result)}>"
+

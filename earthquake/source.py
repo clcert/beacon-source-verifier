@@ -45,7 +45,7 @@ class Source(AbstractSource):
             else:
                 reason = f"event value does not match. ours={our_event} theirs={their_event}"
         else:
-            reason = f"metadata \"{params['metadata']}\" not found. buffer_size={len(self.buffer)}"
+            reason = f"metadata \"{params['metadata']}\" not found. buffer={self.buffer}"
         return {
             self.name(): {
                 "valid": valid,
@@ -62,10 +62,18 @@ class Source(AbstractSource):
             res = requests.get(self.source_url)
             soup = BeautifulSoup(res.content, 'html.parser')
             trs = soup.find_all("tr")[1:]
+            trs.reverse() # To add them in chronological order
+            trs
             if len(trs) != 0:
-                for tr in trs[:self.BUFFER_SIZE]:
+                added = 0
+                for tr in trs:
+                    if added == self.BUFFER_SIZE:
+                        break
                     try:
                         seism = self.parse_seism(tr)
+                        if not seism.is_erb():
+                            self.buffer.add(seism)
+                            added += 1
                     except Exception as e:
                         log.error(f"Error parsing seism: {e}")
             else:
