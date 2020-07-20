@@ -90,7 +90,7 @@ class Source(AbstractSource):
     def parse_seism(self, tr):
         tds = tr.find_all("td")
         if len(tds) != 8:
-            raise SeismParsingException(f"not enough columns in seism summary page. seism={url}")
+            raise SeismParsingException(f"not enough columns in seism summary page.")
         url = urljoin(self.source_url, tds[0].find("a", href=True).attrs["href"])
         # Getting data from that URL:
         res = requests.get(url)
