@@ -67,34 +67,39 @@ class Source(AbstractSource):
         their_list = parse_tweet_list(params["event"])
         start_date = datetime.datetime.fromisoformat(params["metadata"][:-1])
         end_date = start_date + datetime.timedelta(seconds=10)
-        if self.buffer.check_marker(start_date):
+        if len(their_list) == 0:
+            reason = "beacon reported an empty tweet list"
+        elif self.buffer.check_marker(start_date):
             our_list = self.buffer.get_list(end_date)
-            valid = True
-            i, j = 0, 0
-            our_uniq, their_uniq = [], []
-            while i < len(our_list) and j < len(their_list):
-                ours = our_list[i]
-                theirs = their_list[j]
-                if ours < theirs:
+            if len(our_list) == 0:
+                reason = "our verifier reported an empty tweet list"
+            else:
+                valid = True
+                i, j = 0, 0
+                our_uniq, their_uniq = [], []
+                while i < len(our_list) and j < len(their_list):
+                    ours = our_list[i]
+                    theirs = their_list[j]
+                    if ours < theirs:
+                        our_uniq.append(ours)
+                        i += 1
+                    elif theirs < ours:
+                        their_uniq.append(theirs)
+                        j += 1
+                    else:
+                        i += 1
+                        j += 1
+                while i < len(our_list):
+                    ours = our_list[i]
                     our_uniq.append(ours)
                     i += 1
-                elif theirs < ours:
+                while j < len(their_list):
+                    theirs = their_list[j]
                     their_uniq.append(theirs)
                     j += 1
-                else:
-                    i += 1
-                    j += 1
-            while i < len(our_list):
-                ours = our_list[i]
-                our_uniq.append(ours)
-                i += 1
-            while j < len(their_list):
-                theirs = their_list[j]
-                their_uniq.append(theirs)
-                j += 1
-            if len(our_uniq) > 0 or len(their_uniq) > 0:
-                reason = f"Some items are not on both lists. our_uniq=[{our_uniq}] their_uniq=[{their_uniq}]"
-                valid = False
+                if len(our_uniq) > 0 or len(their_uniq) > 0:
+                    reason = f"Some items are not on both lists. our_interval={our_list[0].datestr}_{our_list[-1].datestr} their_interval={their_list[0].datestr}_{their_list[-1].datestr} our_uniq=[{','.join(our_uniq)}] their_uniq=[{','.join(their_uniq)}]"
+                    valid = False
         else:
             reason = f"metadata \"{params['metadata']}\" not found. buffer_size={len(self.buffer)}"
         return {self.name(): {

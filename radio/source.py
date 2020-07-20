@@ -23,8 +23,9 @@ class Source(AbstractSource):
     async def verify(self, params: map) -> map:
         reason = ""
         valid = False
-        if params["metadata"][:len(self.prefix)] != self.prefix:
-            reason = f"wrong marker in pulse metadata. prefix=\"{self.prefix}\""
+        their_prefix = params["metadata"][:len(self.prefix)]
+        if their_prefix != self.prefix:
+            reason = f"wrong marker in pulse metadata. our_prefix=\"{self.prefix}\" their_prefix=\"{their_prefix}\""
         else:
             if self.buffer.check_marker(params["metadata"]):
                 while len(self.buffer) < self.FRAMES_NUM:
