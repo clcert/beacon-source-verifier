@@ -2,6 +2,7 @@ import asyncio
 import logging
 from abc import abstractmethod, ABCMeta
 from threading import Thread, Event
+import time
 
 log = logging.getLogger(__name__)
 
@@ -12,6 +13,7 @@ class AbstractSource(metaclass=ABCMeta):
     """
     NAME = "abstract_source"
     ID = 0
+    RESTART_TIME = 5
 
     def __init__(self):
         self.stop_event = Event()
@@ -39,7 +41,8 @@ class AbstractSource(metaclass=ABCMeta):
                 await self.finish_collector()
                 return
             except Exception as e:
-                log.error(f"Exception in {self.name()} collector: {e.__str__()}, restarting...")
+                log.error(f"Exception in {self.name()} collector: {e.__str__()}, restarting in {AbstractSource.RESTART_TIME} seconds...")
+                time.sleep(AbstractSource.RESTART_TIME)
 
     async def stop_collector(self):
         """

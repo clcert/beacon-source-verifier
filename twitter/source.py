@@ -93,8 +93,8 @@ class Source(AbstractSource):
                         else:
                             i += 1
                             j += 1
-                    our_uniq.append(*our_list[i:])
-                    their_uniq.append(*their_list[j:])
+                    our_uniq += our_list[i:]
+                    their_uniq += their_list[j:]
                     if len(our_uniq) > 0 or len(their_uniq) > 0:
                         reason = f"Some items are not on both lists. our_interval={our_list[0].datestr}_{our_list[-1].datestr} their_interval={their_list[0].datestr}_{their_list[-1].datestr} our_uniq=[{','.join(our_uniq)}] their_uniq=[{','.join(their_uniq)}]"
                     else: 
