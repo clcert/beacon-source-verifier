@@ -23,7 +23,7 @@ class SeismParsingException(Exception):
         return f"SeismParsingException: {self.reason}"
 
 class Source(AbstractSource):
-    BUFFER_SIZE = 5
+    BUFFER_SIZE = 100
     NAME = "earthquake"
 
     def __init__(self, config: map):
@@ -69,15 +69,11 @@ class Source(AbstractSource):
             trs.reverse() # To add them in chronological order
             trs
             if len(trs) != 0:
-                added = 0
                 for tr in trs:
-                    if added == self.BUFFER_SIZE:
-                        break
                     try:
                         seism = self.parse_seism(tr)
                         if not seism.is_erb():
                             self.buffer.add(seism)
-                            added += 1
                     except Exception as e:
                         log.error(f"Error parsing seism: {e}")
             else:
