@@ -104,7 +104,7 @@ class SourceManager:
                     log.error(f"Error getting result from source: {e}")
         except Exception as e:
             log.error(f"Error getting params for pulse {pulse_id}: {e}")
-        self.save_response(pulse_id, results, is_latest=True)
+        self.save_response(pulse_id, results, is_last=True)
 
     def get_latest_pulse(self) -> map:
         """
@@ -133,7 +133,7 @@ class SourceManager:
             paramsMap[value["sourceName"]] = value
         return paramsMap
 
-    def save_response(self, pulse, sources, is_latest=True):
+    def save_response(self, pulse, sources, is_last=True):
         response = {
             "pulse": pulse,
             "valid": True,
@@ -146,7 +146,7 @@ class SourceManager:
         os.makedirs(folder, exist_ok=True)
         with open(f"{folder}/{pulse_splitted[3]}.json", 'w') as f:
             json.dump(response, f)
-        if is_latest:
-            with open(f"{folder}/latest.json", 'w') as latest_f:            
-                json.dump(response, latest_f)
+        if is_last:
+            with open(f"{folder}/last.json", 'w') as last_f:            
+                json.dump(response, last_f)
         return response
