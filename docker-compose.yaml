@@ -1,0 +1,17 @@
+version: "3"
+services:
+    caddy:
+        image: caddy:2.0.0-alpine
+        ports:
+            - 80:80
+            - 443:443
+        volumes:
+            - ./caddy/data:/data
+            - ./caddy/config:/config
+            - ./caddy/Caddyfile:/etc/caddy/Caddyfile
+            - ./verified/:/verified
+    python:
+        build: ./
+        volumes:
+          - ./:/app
+

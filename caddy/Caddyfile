@@ -1,0 +1,7 @@
+verifier.beacon.clcert.xor.cl
+
+header Content-Type "application/json"
+root * /verified
+file_server
+
+try_files {path} {path}.json
