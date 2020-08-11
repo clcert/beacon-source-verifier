@@ -118,22 +118,23 @@ class Source(AbstractSource):
     async def verify(self, params: map) -> map:
         valid = False
         reason = ""
-        if params.get("metadata", "0") == "0":
-            reason = "empty metadata"
-        elif params.get("event", "0") == "0":
-            reason = "empty event"
+        status = params.get("status", 1)
+        if status != 0:
+            reason = f"wrong status code: {status}"
         else:
             block_num = int(params["metadata"], 16)
             if block_num % self.block_id_module == 0:
                 correct = 0
                 errors = []
+                possible = {}
                 for k, buffer in self.buffers.items():
+                    possible[k] = len(buffer)
                     if buffer.check_marker(block_num):
                         block = buffer.get_first()
-                        if params["event"] in block.hashes:
+                        if params["raw"] in block.hashes:
                             correct += 1
                         else:
-                            error = f"block hash not found in block generation. block_number={block_num} block_hash={params['event']} source_name={k} source_buffer_length={len(buffer)} source_buffer={buffer}"
+                            error = f"block hash not found in block generation. block_number={block_num} block_hash={params['raw']} source_name={k} source_buffer_length={len(buffer)} source_buffer={buffer}"
                             errors.append(error)
                             log.debug(error)
                     else:
@@ -142,6 +143,7 @@ class Source(AbstractSource):
                         log.debug(error)
                 if correct >= self.threshold:
                     valid = True
+                    reason = f"possible={json.dumps(possible)}"
                 else:
                     reason = f"not enough valid nodes to verify. total_nodes={len(self.buffers)} threshold={self.threshold} correct={correct} errors=[{','.join(errors)}]"
             else:
@@ -163,8 +165,10 @@ class Source(AbstractSource):
                     f"Fetching latest ethereum block from {api.NAME} (timeout: {timeout})")
                 try:
                     block, ancestor = api.get_latest_block(timeout)
-                    self.buffers[api.NAME].add(ancestor)
-                    self.buffers[api.NAME].add(block)
+                    if block.number % self.block_id_module == 0: 
+                        self.buffers[api.NAME].add(block)
+                    elif block.number % self.block_id_module == 1:
+                        self.buffers[api.NAME].add(ancestor)
                 except Exception as e:
                     log.error(f"error getting block from {api.NAME}: {e}")
             wait_time = max(0, self.fetch_interval -

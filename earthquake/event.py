@@ -12,7 +12,7 @@ class Event:
         self.depth = depth
         self.magnitude = magnitude
 
-    def get_raw_data(self) -> bytes:
+    def get_canonical_form(self) -> bytes:
         return ";".join(self.get_tuple()).encode()
 
     def get_tuple(self):
@@ -22,7 +22,7 @@ class Event:
         return self.get_tuple() == other.get_tuple()
 
     def get_marker(self) -> str:
-        return self.id
+        return hashlib.sha3_512(self.get_canonical_form()).hexdigest()
 
     def __str__(self) -> str:
         return f"Event<id={self.id},date={self.datestr},lat={self.lat},long={self.long},depth={self.depth},magnitude={self.magnitude}>"

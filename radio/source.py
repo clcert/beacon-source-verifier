@@ -17,16 +17,15 @@ class Source(AbstractSource):
         self.url = config["url"]
         self.port = config["port"]
         self.prefix = config["prefix"]
-        self.buffer = Buffer(self.BUFFER_SIZE)
+        self.buffer = Buffer(self.BUFFER_SIZE, config["prefix"])
         super().__init__()
 
     async def verify(self, params: map) -> map:
         reason = ""
         valid = False
-        if params.get("metadata", "0") == "0":
-            reason = "empty metadata"
-        elif params.get("event", "0") == "0":
-            reason = "empty event"
+        status = params.get("status", 1)
+        if  status != 0:
+            reason = f"wrong status code {status}"
         else:
             their_prefix = params["metadata"][:len(self.prefix)]
             if their_prefix != self.prefix:
@@ -41,13 +40,14 @@ class Source(AbstractSource):
                     d = b''
                     log.debug(f"joining raw data from {len(frames)} frames...")
                     for frame in frames:
-                        d += frame.get_raw_data()
+                        d += frame.get_canonical_form()
                     log.debug(f"Data joined, comparing with event data:")
                     d_hex = d.hex()
-                    if d_hex == params["event"]:
+                    if d_hex == params["raw"]:
                         valid = True
+                        reason = f"possible={self.buffer.possible}"
                     else:
-                        reason = f"event value does not match. ours={d_hex} theirs={params['event']}"
+                        reason = f"raw value does not match. ours={d_hex} theirs={params['raw']}"
                 else:
                     reason =  f"metadata \"{params['metadata']}\" not found. buffer_size={len(self.buffer)}"
         return {self.name(): {

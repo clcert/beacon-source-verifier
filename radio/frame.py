@@ -123,11 +123,11 @@ class Frame:
         self.header = FrameHeader()
         self.data = b''
 
-    def get_raw_data(self) -> bytes:
+    def get_canonical_form(self) -> bytes:
         return self.header.data + self.data
 
     def get_marker(self) -> str:
-        return hashlib.sha3_512(self.get_raw_data()).hexdigest()
+        return hashlib.sha3_512(self.get_canonical_form()).hexdigest()
 
     async def read(self, reader: asyncio.StreamReader):
         await self.header.read(reader)

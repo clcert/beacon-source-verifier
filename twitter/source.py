@@ -56,6 +56,7 @@ class Source(AbstractSource):
         self.key = config["consumer_key"]
         self.secret = config["consumer_secret"]
         self.tweet_interval = config["tweet_interval"]
+        self.second_start = config["second_start"]
         self.buffer = Buffer(self.BUFFER_SIZE)
         self.response = None
         super().__init__()
@@ -64,15 +65,17 @@ class Source(AbstractSource):
         valid = False
         reason = ""
         log.debug(f"checking twitter buffer... (length: {len(self.buffer)})")
-        if params.get("metadata", "0") == "0":
-            reason = "empty metadata"
-        elif params.get("event", "0") == "0":
-            reason = "empty event"
+        status = params.get("status", 1)
+        if status != 0:
+            reason = f"wrong status code: {status}"
         else:
-            their_list = parse_tweet_list(params["event"])
+            their_list = parse_tweet_list(params["raw"])
             start_date = datetime.datetime.fromisoformat(params["metadata"][:-1])
-            end_date = start_date + datetime.timedelta(seconds=10)
-            if len(their_list) == 0:
+            end_date = start_date + datetime.timedelta(seconds=self.tweet_interval)
+            possible = len(self.buffer)
+            if start_date.second != self.second_start:
+                reason = f"marker did not start in second {self.second_start}"
+            elif len(their_list) == 0:
                 reason = "beacon reported an empty tweet list"
             elif self.buffer.check_marker(start_date):
                 our_list = self.buffer.get_list(end_date)
@@ -99,6 +102,7 @@ class Source(AbstractSource):
                         reason = f"Some items are not on both lists. our_interval={our_list[0].datestr}_{our_list[-1].datestr} their_interval={their_list[0].datestr}_{their_list[-1].datestr} our_uniq=[{','.join(our_uniq)}] their_uniq=[{','.join(their_uniq)}]"
                     else: 
                         valid = True
+                        reason = f"possible={possible}"
             else:
                 reason = f"metadata \"{params['metadata']}\" not found. buffer_size={len(self.buffer)}"
         return {self.name(): {
@@ -120,8 +124,11 @@ class Source(AbstractSource):
                 if "data" not in resp:
                     raise TwitterCollectorException(f"{resp['title']}: {resp['detail']}")
                 t = resp["data"]
-                self.buffer.add(
-                    Tweet(t["id"], t["created_at"], t["author_id"], t["text"]))
+                tweet = Tweet(t["id"], t["created_at"], t["author_id"], t["text"])
+                start_date = tweet.date.replace(second=self.second_start)
+                end_date = start_date + datetime.timedelta(seconds=self.tweet_interval)
+                if tweet.date >= start_date and tweet.date <= end_date:
+                    self.buffer.add(tweet)
         print("collector ended :(")
 
     async def finish_collector(self) -> None:

@@ -10,7 +10,7 @@ class Tweet:
         self.author = author
         self.message = message
 
-    def get_raw_data(self) -> bytes:
+    def get_canonical_form(self) -> bytes:
         return (self.datestr + str(self.id) + self.author + self.message).encode()
 
     def get_tuple(self):

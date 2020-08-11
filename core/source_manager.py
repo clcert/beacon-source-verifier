@@ -127,7 +127,7 @@ class SourceManager:
         extValues_req = requests.get(f"{self.base_api}/extValue/{pulse_value}")
         if extValues_req.status_code != 200:
             raise BeaconAPIException(f"ExtValue API answered with non-200 code: {extValues_req.status_code}")
-        extValues = extValues_req.json()["eventsCollected"]
+        extValues = extValues_req.json()["events"]
         paramsMap = {}
         for value in extValues:
             paramsMap[value["sourceName"]] = value
