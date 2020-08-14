@@ -25,7 +25,4 @@ class Event:
         return hashlib.sha3_512(self.get_canonical_form()).hexdigest()
 
     def __str__(self) -> str:
-        return f"Event<id={self.id},date={self.datestr},lat={self.lat},long={self.long},depth={self.depth},magnitude={self.magnitude}>"
-
-    def is_erb(self) -> bool:
-        return self.id.startswith("erb_")
+        return f"Event<{self.get_canonical_form().decode()}>"

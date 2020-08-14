@@ -98,7 +98,7 @@ class Source(AbstractSource):
                     our_uniq += our_list[i:]
                     their_uniq += their_list[j:]
                     if len(our_uniq) > 0 or len(their_uniq) > 0:
-                        reason = f"Some items are not on both lists. our_interval={our_list[0].datestr}_{our_list[-1].datestr} their_interval={their_list[0].datestr}_{their_list[-1].datestr} our_uniq=[{','.join(our_uniq)}] their_uniq=[{','.join(their_uniq)}]"
+                        reason = f"Some items are not on both lists. our_interval={our_list[0].datestr}_{our_list[-1].datestr} their_interval={their_list[0].datestr}_{their_list[-1].datestr} our_uniq=[{','.join([str(x) for x in our_uniq])}] their_uniq=[{','.join([str(x) for x in their_uniq])}]"
                     else: 
                         valid = True
                         reason = f"possible=1"

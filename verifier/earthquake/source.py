@@ -73,8 +73,7 @@ class Source(AbstractSource):
                 for tr in trs:
                     try:
                         seism = self.parse_seism(tr)
-                        if not seism.is_erb():
-                            self.buffer.add(seism)
+                        self.buffer.add(seism)
                     except Exception as e:
                         log.error(f"Error parsing seism: {e}")
             else:

@@ -42,5 +42,5 @@ class Buffer:
         result = []
         for k, v in self.buffer.items():
             result.append(f"{k}={v}")
-        return f"EthBuffer<{','.join(result)}>"
+        return f"EarthquakeBuffer<{','.join(result)}>"
 
