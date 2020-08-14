@@ -17,5 +17,6 @@ services:
         container_name: beacon-verifier-python
         restart: always
         volumes:
-          - ./:/app
+          - ./verifier:/app
+          - /verified:/verified
 
