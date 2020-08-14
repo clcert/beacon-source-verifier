@@ -38,7 +38,7 @@ class Buffer:
                     self.buffer.move_to_end(k, False)
                     log.debug(f"removed {i} elements before hash...")
                     return True
-                if k.get_marker()[:len(self.prefix)] == self.prefix:
+                if v.get_marker()[:len(self.prefix)] == self.prefix:
                     self.possible -= 1
                 i += 1
         log.debug(f"marker {marker} not found...")
@@ -51,8 +51,8 @@ class Buffer:
         else:
             res: List[Frame] = []
             for _ in range(size):
-                k, v = self.buffer.popitem(False)
-                if k.get_marker()[:len(self.prefix)] == self.prefix:
+                _, v = self.buffer.popitem(False)
+                if v.get_marker()[:len(self.prefix)] == self.prefix:
                     self.possible -= 1
                 res.append(v)
             return res

@@ -68,7 +68,7 @@ class SourceManager:
         :return:
         """
         await asyncio.sleep(2 * self.verification_interval)
-        log.debug("Starting verification process...")
+        log.info("Starting verification process...")
         while True:
             start_time = datetime.now()
             try:
@@ -89,6 +89,7 @@ class SourceManager:
         for source in self.sources:
             results[source.name()] = {"valid": False, "reason": "timeout"}
         pulse_id, ext_value = self.get_latest_pulse()
+        log.info(f"Verifying pulse {pulse_id}")
         try:
             params = self.get_params(ext_value)
             done, pending = await asyncio.wait(

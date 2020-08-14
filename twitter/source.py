@@ -72,7 +72,6 @@ class Source(AbstractSource):
             their_list = parse_tweet_list(params["raw"])
             start_date = datetime.datetime.fromisoformat(params["metadata"][:-1])
             end_date = start_date + datetime.timedelta(seconds=self.tweet_interval)
-            possible = len(self.buffer)
             if start_date.second != self.second_start:
                 reason = f"marker did not start in second {self.second_start}"
             elif len(their_list) == 0:
@@ -102,7 +101,7 @@ class Source(AbstractSource):
                         reason = f"Some items are not on both lists. our_interval={our_list[0].datestr}_{our_list[-1].datestr} their_interval={their_list[0].datestr}_{their_list[-1].datestr} our_uniq=[{','.join(our_uniq)}] their_uniq=[{','.join(their_uniq)}]"
                     else: 
                         valid = True
-                        reason = f"possible={possible}"
+                        reason = f"possible=1"
             else:
                 reason = f"metadata \"{params['metadata']}\" not found. buffer_size={len(self.buffer)}"
         return {self.name(): {
