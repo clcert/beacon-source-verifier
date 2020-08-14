@@ -15,6 +15,12 @@ class Buffer:
     def __len__(self):
         return len(self.buffer)
 
+    def total_hashes(self) -> int:
+        i = 0
+        for b in self.buffer.values():
+            i += len(b.hashes)
+        return i
+
     def add(self, item: Block) -> None:
         if item.get_marker() in self.buffer:
             self.buffer[item.get_marker()].hashes.update(item.hashes)

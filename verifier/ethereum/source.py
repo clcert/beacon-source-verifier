@@ -33,7 +33,7 @@ class Infura():
         self.url = "https://mainnet.infura.io/v3/"
         self.token = token
 
-    def get_latest_block(self, timeout=0) -> Block:
+    def get_latest_block(self, timeout=0) -> (Block, Block):
         r = requests.post(self.url + self.token, json={
             "jsonrpc": "2.0",
             "method": "eth_getBlockByNumber",
@@ -56,7 +56,7 @@ class EtherScan():
         self.url = "https://api.etherscan.io/api?module=proxy&action=eth_getBlockByNumber&tag=latest&boolean=false&apikey={}"
         self.token = token
 
-    def get_latest_block(self, timeout=0) -> Block:
+    def get_latest_block(self, timeout=0) -> (Block, Block):
         r = requests.get(self.url.format(self.token), timeout=timeout)
         if r.status_code != 200:
             raise APIException(r.json())
@@ -74,7 +74,7 @@ class Rivet():
         self.url = "https://{}.eth.rpc.rivet.cloud/"
         self.token = token
 
-    def get_latest_block(self, timeout=0) -> Block:
+    def get_latest_block(self, timeout=0) -> (Block, Block):
         r = requests.post(self.url.format(self.token), json={
             "jsonrpc": "2.0",
             "method": "eth_getBlockByNumber",
@@ -128,7 +128,7 @@ class Source(AbstractSource):
                 errors = []
                 possible = {}
                 for k, buffer in self.buffers.items():
-                    possible[k] = len(buffer)
+                    possible[k] = buffer.total_hashes()
                     if buffer.check_marker(block_num):
                         block = buffer.get_first()
                         if params["raw"] in block.hashes:
