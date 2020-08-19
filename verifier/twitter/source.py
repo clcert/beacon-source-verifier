@@ -66,7 +66,7 @@ class Source(AbstractSource):
         reason = ""
         log.debug(f"checking twitter buffer... (length: {len(self.buffer)})")
         status = params.get("status", 1)
-        if status == 2:
+        if (status & 2) == 2 :
             reason = f"wrong status code: {status}"
         else:
             their_list = parse_tweet_list(params["raw"])
