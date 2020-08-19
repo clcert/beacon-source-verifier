@@ -18,5 +18,5 @@ services:
         restart: always
         volumes:
           - ./verifier:/app
-          - /verified:/verified
+          - ./verified:/verified
 
