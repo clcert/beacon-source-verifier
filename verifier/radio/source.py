@@ -24,7 +24,7 @@ class Source(AbstractSource):
         reason = ""
         valid = False
         status = params.get("status", 1)
-        if  status != 0:
+        if  status == 2:
             reason = f"wrong status code {status}"
         else:
             their_prefix = params["metadata"][:len(self.prefix)]

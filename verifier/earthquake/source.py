@@ -38,7 +38,7 @@ class Source(AbstractSource):
         valid = False
         status = params.get("status", 1)
         possible = len(self.buffer)
-        if status != 0:
+        if status == 2:
             reason = f"wrong status code: {status}"
         elif self.buffer.check_marker(params["metadata"]):
             our_event = self.buffer.get_first()
