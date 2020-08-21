@@ -23,7 +23,7 @@ class SeismParsingException(Exception):
         return f"SeismParsingException: {self.reason}"
 
 class Source(AbstractSource):
-    BUFFER_SIZE = 10
+    BUFFER_SIZE = 3
     NAME = "earthquake"
 
     def __init__(self, config: map):

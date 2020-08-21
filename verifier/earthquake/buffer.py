@@ -11,28 +11,38 @@ log = logging.getLogger(__name__)
 class Buffer:
     def __init__(self, size: int):
         self.buffer = []
+        self.set = set()
         self.size = size
 
     def __len__(self):
         return len(self.buffer)
 
     def add(self, item: Event) -> None:
-        if len(self.buffer) == self.size:
-            heapq.heapreplace(self.buffer, create_heap_item(item))
-        else:
-            heapq.heappush(self.buffer, create_heap_item(item))
+        if item.get_marker() not in self.set:
+            if len(self.buffer) == self.size:
+                item2 = heapq.heappushpop(self.buffer, create_heap_item(item))
+                if item2[-1].get_marker() in self.set:
+                    self.set.remove(item2[-1].get_marker())
+                self.set.add(item.get_marker())
+            else:
+                self.set.add(item.get_marker())
+                heapq.heappush(self.buffer, create_heap_item(item))
 
     def check_marker(self, marker: str) -> bool:
         log.debug(f"checking marker {marker} (buffer size = {len(self.buffer)} items)")
         while len(self.buffer) > 0:
             item = heapq.heappop(self.buffer)
+            self.set.remove(item[-1].get_marker())
             if item[-1].get_marker() == marker:
                 heapq.heappush(self.buffer, item)
+                self.set.add(item[-1].get_marker())
                 return True
         return False
 
     def get_first(self) -> Event:
-        return heapq.heappop(self.buffer)[2]
+        item = heapq.heappop(self.buffer)[-1]
+        self.set.remove(item.get_marker())
+        return item
 
 
 def create_heap_item(item: Event) -> tuple:
