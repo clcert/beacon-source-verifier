@@ -48,7 +48,7 @@ class BearerTokenAuth(AuthBase):
 
 
 class Source(AbstractSource):
-    STREAM_URL = "https://api.twitter.com/labs/1/tweets/stream/sample"
+    STREAM_URL = "https://api.twitter.com/2/tweets/sample/stream?tweet.fields=created_at&expansions=author_id"
     BUFFER_SIZE = 20000
     NAME = "twitter"
 
@@ -98,13 +98,13 @@ class Source(AbstractSource):
                     our_uniq += our_list[i:]
                     their_uniq += their_list[j:]
                     if len(our_uniq) > 0 or len(their_uniq) > 0:
-                        reason = f"Some items are not on both lists. "
+                        reason = (f"Some items are not on both lists. "
                         f"our_buf_len={len(our_list)} "
                         f"their_buf_len={len(their_list)} "
                         f"our_interval={our_list[0].datestr}_{our_list[-1].datestr} "
                         f"their_interval={their_list[0].datestr}_{their_list[-1].datestr} "
                         f"our_uniq=[{','.join([str(x) for x in our_uniq])}] "
-                        f"their_uniq=[{','.join([str(x) for x in their_uniq])}]"
+                        f"their_uniq=[{','.join([str(x) for x in their_uniq])}]")
                     else: 
                         valid = True
                         reason = f"possible=1"
