@@ -44,6 +44,13 @@ class Buffer:
         self.set.remove(item.get_marker())
         return item
 
+    def __str__(self) -> str:
+        result = []
+        for k in self.buffer:
+            result.append(f"{k}")
+        return f"EarthquakeBuffer<{','.join(result)}>"
+
+
 
 def create_heap_item(item: Event) -> tuple:
-    return item.datestr, item.id, item
+    return item.date, item.id, item

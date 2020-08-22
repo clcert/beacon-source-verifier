@@ -66,8 +66,7 @@ class Source(AbstractSource):
             start_time = datetime.now()
             res = requests.get(self.source_url)
             soup = BeautifulSoup(res.content, 'html.parser')
-            trs = soup.find_all("tr")[1:]
-            trs.reverse() # To add them in chronological order
+            trs = soup.find_all("tr")[1:Source.BUFFER_SIZE + 1]
             trs
             if len(trs) != 0:
                 for tr in trs:

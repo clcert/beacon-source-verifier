@@ -7,6 +7,7 @@ class Event:
     def __init__(self, id: str, date: str, lat: str, long: str, depth: str, magnitude: str):
         self.id = id
         self.datestr = date
+        self.date = datetime.datetime.strptime(date, "%H:%M:%S %d/%m/%Y")
         self.lat = lat
         self.long = long
         self.depth = depth
