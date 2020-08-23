@@ -29,14 +29,15 @@ class Buffer:
                 heapq.heappush(self.buffer, create_heap_item(item))
 
     def check_marker(self, marker: str) -> bool:
-        log.debug(f"checking marker {marker} (buffer size = {len(self.buffer)} items)")
-        while len(self.buffer) > 0:
-            item = heapq.heappop(self.buffer)
-            self.set.remove(item[-1].get_marker())
-            if item[-1].get_marker() == marker:
-                heapq.heappush(self.buffer, item)
-                self.set.add(item[-1].get_marker())
-                return True
+        if marker in self.set:
+            log.debug(f"checking marker {marker} (buffer size = {len(self.buffer)} items)")
+            while len(self.buffer) > 0:
+                item = heapq.heappop(self.buffer)
+                self.set.remove(item[-1].get_marker())
+                if item[-1].get_marker() == marker:
+                    heapq.heappush(self.buffer, item)
+                    self.set.add(item[-1].get_marker())
+                    return True
         return False
 
     def get_first(self) -> Event:
