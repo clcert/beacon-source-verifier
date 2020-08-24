@@ -27,3 +27,6 @@ class Event:
 
     def __str__(self) -> str:
         return f"Event<{self.get_canonical_form().decode()}>"
+
+    def __gt__(self, other) -> bool:
+        return self.get_tuple() < other.get_tuple()
