@@ -9,6 +9,8 @@ from urllib.parse import urljoin
 import requests
 from requests.auth import AuthBase
 
+from core.source_manager import SourceVerificationException
+
 from core.abstract_source import AbstractSource
 from ethereum.buffer import Buffer
 
@@ -116,42 +118,45 @@ class Source(AbstractSource):
         super().__init__()
 
     async def verify(self, params: map) -> map:
-        valid = False
-        reason = ""
-        status = params.get("status", 1)
-        if (status & 2) == 2 :
-            reason = f"wrong status code: {status}"
-        else:
-            block_num = int(params["metadata"], 16)
-            if block_num % self.block_id_module == 0:
-                correct = 0
-                errors = []
-                possible = {}
-                for k, buffer in self.buffers.items():
-                    possible[k] = buffer.total_hashes()
-                    if buffer.check_marker(block_num):
-                        block = buffer.get_first()
-                        if params["raw"] in block.hashes:
-                            correct += 1
+        try:
+            valid = False
+            reason = ""
+            status = params.get("status", 1)
+            if (status & 2) == 2 :
+                reason = f"wrong status code: {status}"
+            else:
+                block_num = int(params["metadata"], 16)
+                if block_num % self.block_id_module == 0:
+                    correct = 0
+                    errors = []
+                    possible = {}
+                    for k, buffer in self.buffers.items():
+                        possible[k] = buffer.total_hashes()
+                        if buffer.check_marker(block_num):
+                            block = buffer.get_first()
+                            if params["raw"] in block.hashes:
+                                correct += 1
+                            else:
+                                error = f"block hash not found in block generation. block_number={block_num} block_hash={params['raw']} source_name={k} source_buffer_length={len(buffer)} source_buffer={buffer}"
+                                errors.append(error)
+                                log.debug(error)
                         else:
-                            error = f"block hash not found in block generation. block_number={block_num} block_hash={params['raw']} source_name={k} source_buffer_length={len(buffer)} source_buffer={buffer}"
+                            error = f"block number not found on buffer. block_number={block_num} source_name={k} source_buffer_length={len(buffer)} source_buffer={buffer}"
                             errors.append(error)
                             log.debug(error)
+                    if correct >= self.threshold:
+                        valid = True
+                        reason = f"possible={json.dumps(possible)}"
                     else:
-                        error = f"block number not found on buffer. block_number={block_num} source_name={k} source_buffer_length={len(buffer)} source_buffer={buffer}"
-                        errors.append(error)
-                        log.debug(error)
-                if correct >= self.threshold:
-                    valid = True
-                    reason = f"possible={json.dumps(possible)}"
+                        reason = f"not enough valid nodes to verify. total_nodes={len(self.buffers)} threshold={self.threshold} correct={correct} errors=[{','.join(errors)}]"
                 else:
-                    reason = f"not enough valid nodes to verify. total_nodes={len(self.buffers)} threshold={self.threshold} correct={correct} errors=[{','.join(errors)}]"
-            else:
-                reason = f"beacon reported an invalid block number as randomness source. module={self.block_id_module} block_id={block_num}"
-        return {self.name(): {
-            "valid": valid,
-            "reason": reason
-        }}
+                    reason = f"beacon reported an invalid block number as randomness source. module={self.block_id_module} block_id={block_num}"
+            return {self.name(): {
+                "valid": valid,
+                "reason": reason
+            }}
+        except Exception as e:
+            raise SourceVerificationException(self.name(), str(e))
 
     async def init_collector(self) -> None:
         self.running = True

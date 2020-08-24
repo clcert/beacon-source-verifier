@@ -6,6 +6,8 @@ from bs4 import BeautifulSoup
 import asyncio
 from urllib.parse import urljoin
 
+from core.source_manager import SourceVerificationException
+
 import requests
 from requests.auth import AuthBase
 
@@ -34,29 +36,32 @@ class Source(AbstractSource):
         super().__init__()
 
     async def verify(self, params: map) -> map:
-        reason = ""
-        valid = False
-        status = params.get("status", 1)
-        possible = len(self.buffer)
-        if (status & 2) == 2 :
-            reason = f"wrong status code: {status}"
-        elif self.buffer.check_marker(params["metadata"]):
-            our_event = self.buffer.get_first()
-            their_event = parse_json_event(params["raw"])
-            log.debug(f"Comparing our event data with their event data:")
-            if our_event == their_event:
-                valid = True
-                reason = f"possible={possible}"
+        try:
+            reason = ""
+            valid = False
+            status = params.get("status", 1)
+            possible = len(self.buffer)
+            if (status & 2) == 2 :
+                reason = f"wrong status code: {status}"
+            elif self.buffer.check_marker(params["metadata"]):
+                our_event = self.buffer.get_first()
+                their_event = parse_json_event(params["raw"])
+                log.debug(f"Comparing our event data with their event data:")
+                if our_event == their_event:
+                    valid = True
+                    reason = f"possible={possible}"
+                else:
+                    reason = f"event value does not match. ours={our_event} theirs={their_event}"
             else:
-                reason = f"event value does not match. ours={our_event} theirs={their_event}"
-        else:
-            reason = f"metadata \"{params['metadata']}\" not found. buffer={self.buffer}"
-        return {
-            self.name(): {
-                "valid": valid,
-                "reason": reason
+                reason = f"metadata \"{params['metadata']}\" not found. buffer={self.buffer}"
+            return {
+                self.name(): {
+                    "valid": valid,
+                    "reason": reason
+                    }
                 }
-            }
+        except Exception as e:
+            raise SourceVerificationException(self.name(), str(e))
 
     async def init_collector(self) -> None:
         self.running = True 

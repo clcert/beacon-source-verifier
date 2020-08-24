@@ -6,6 +6,8 @@ from typing import List
 import requests
 from requests.auth import AuthBase
 
+from core.source_manager import SourceVerificationException
+
 from core.abstract_source import AbstractSource
 from twitter.buffer import Buffer
 from twitter.tweet import Tweet
@@ -62,58 +64,61 @@ class Source(AbstractSource):
         super().__init__()
 
     async def verify(self, params: map) -> map:
-        valid = False
-        reason = ""
-        log.debug(f"checking twitter buffer... (length: {len(self.buffer)})")
-        status = params.get("status", 1)
-        if (status & 2) == 2 :
-            reason = f"wrong status code: {status}"
-        else:
-            their_list = parse_tweet_list(params["raw"])
-            start_date = datetime.datetime.fromisoformat(params["metadata"][:-1])
-            end_date = start_date + datetime.timedelta(seconds=self.tweet_interval)
-            if start_date.second != self.second_start:
-                reason = f"marker did not start in second {self.second_start}"
-            elif len(their_list) == 0:
-                reason = "beacon reported an empty tweet list"
-            elif self.buffer.check_marker(start_date):
-                our_list = self.buffer.get_list(end_date)
-                if len(our_list) == 0:
-                    reason = "our verifier reported an empty tweet list"
-                else:
-                    i, j = 0, 0
-                    our_uniq, their_uniq = [], []
-                    while i < len(our_list) and j < len(their_list):
-                        ours = our_list[i]
-                        theirs = their_list[j]
-                        if ours < theirs:
-                            our_uniq.append(ours)
-                            i += 1
-                        elif theirs < ours:
-                            their_uniq.append(theirs)
-                            j += 1
-                        else:
-                            i += 1
-                            j += 1
-                    our_uniq += our_list[i:]
-                    their_uniq += their_list[j:]
-                    if len(our_uniq) > 0 or len(their_uniq) > 0:
-                        reason = (f"Some items are not on both lists. "
-                        f"our_buf_len={len(our_list)} "
-                        f"their_buf_len={len(their_list)} "
-                        f"our_interval={our_list[0].datestr}_{our_list[-1].datestr} "
-                        f"their_interval={their_list[0].datestr}_{their_list[-1].datestr} "
-                        f"our_uniq=[{','.join([str(x) for x in our_uniq])}] "
-                        f"their_uniq=[{','.join([str(x) for x in their_uniq])}]")
-                    else: 
-                        valid = True
-                        reason = f"possible=1"
+        try:
+            valid = False
+            reason = ""
+            log.debug(f"checking twitter buffer... (length: {len(self.buffer)})")
+            status = params.get("status", 1)
+            if (status & 2) == 2 :
+                reason = f"wrong status code: {status}"
             else:
-                reason = f"metadata \"{params['metadata']}\" not found. buffer_size={len(self.buffer)}"
-        return {self.name(): {
-            "valid": valid,
-            "reason": reason
-        }}
+                their_list = parse_tweet_list(params["raw"])
+                start_date = datetime.datetime.fromisoformat(params["metadata"][:-1])
+                end_date = start_date + datetime.timedelta(seconds=self.tweet_interval)
+                if start_date.second != self.second_start:
+                    reason = f"marker did not start in second {self.second_start}"
+                elif len(their_list) == 0:
+                    reason = "beacon reported an empty tweet list"
+                elif self.buffer.check_marker(start_date):
+                    our_list = self.buffer.get_list(end_date)
+                    if len(our_list) == 0:
+                        reason = "our verifier reported an empty tweet list"
+                    else:
+                        i, j = 0, 0
+                        our_uniq, their_uniq = [], []
+                        while i < len(our_list) and j < len(their_list):
+                            ours = our_list[i]
+                            theirs = their_list[j]
+                            if ours < theirs:
+                                our_uniq.append(ours)
+                                i += 1
+                            elif theirs < ours:
+                                their_uniq.append(theirs)
+                                j += 1
+                            else:
+                                i += 1
+                                j += 1
+                        our_uniq += our_list[i:]
+                        their_uniq += their_list[j:]
+                        if len(our_uniq) > 0 or len(their_uniq) > 0:
+                            reason = (f"Some items are not on both lists. "
+                            f"our_buf_len={len(our_list)} "
+                            f"their_buf_len={len(their_list)} "
+                            f"our_interval={our_list[0].datestr}_{our_list[-1].datestr} "
+                            f"their_interval={their_list[0].datestr}_{their_list[-1].datestr} "
+                            f"our_uniq=[{','.join([str(x) for x in our_uniq])}] "
+                            f"their_uniq=[{','.join([str(x) for x in their_uniq])}]")
+                        else: 
+                            valid = True
+                            reason = f"possible=1"
+                else:
+                    reason = f"metadata \"{params['metadata']}\" not found. buffer_size={len(self.buffer)}"
+            return {self.name(): {
+                "valid": valid,
+                "reason": reason
+            }}
+        except Exception as e:
+            raise SourceVerificationException(self.name(), str(e))
 
     async def init_collector(self) -> None:
         bearer_token = BearerTokenAuth(self.key, self.secret)

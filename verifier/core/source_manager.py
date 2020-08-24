@@ -15,6 +15,13 @@ log = logging.getLogger(__name__)
 class BeaconAPIException(Exception):
     pass
 
+class SourceVerificationException(Exception):
+    def __init__(self, source, reason):
+        self.source = source
+        self.reason = reason
+    
+    def get_dict(self):
+        return {"source": {"valid": False, "reason": self.reason}}
 
 class SourceManager:
     """
@@ -96,6 +103,9 @@ class SourceManager:
                 {asyncio.create_task(source.verify(params[source.name()])) for source in self.sources},
                 timeout=self.verification_timeout)
             for task in pending:
+                e = task.exception()
+                if e is not None:
+                    results.update(e.get_dict())
                 task.cancel()
             for res in done:
                 try:
