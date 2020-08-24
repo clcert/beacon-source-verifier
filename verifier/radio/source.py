@@ -65,7 +65,7 @@ class Source(AbstractSource):
 
     async def collect(self):
         frame = Frame()
-        await frame.read(self.reader)
+        await asyncio.wait_for(frame.read(self.reader), timeout=5)
         self.buffer.add(frame)
 
     async def finish_collector(self) -> None:
