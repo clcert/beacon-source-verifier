@@ -116,7 +116,7 @@ class SourceManager:
         except Exception as e:
             error = f"Error getting params for pulse {pulse_id}: {e}"
             log.error(error)
-            for result in results:
+            for result in results.values():
                 result["reason"] = error
 
         self.save_response(pulse_id, results, is_last=True)
