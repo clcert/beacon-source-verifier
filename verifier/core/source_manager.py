@@ -114,7 +114,11 @@ class SourceManager:
                 except Exception as e:
                     log.error(f"Error getting result from source: {e}")
         except Exception as e:
-            log.error(f"Error getting params for pulse {pulse_id}: {e}")
+            error = f"Error getting params for pulse {pulse_id}: {e}"
+            log.error(error)
+            for result in results:
+                result["reason"] = error
+
         self.save_response(pulse_id, results, is_last=True)
 
     def get_latest_pulse(self) -> map:
