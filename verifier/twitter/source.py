@@ -148,10 +148,14 @@ class Source(AbstractSource):
 def parse_tweet_list(tweet_list: str) -> List[Tweet]:
     tweets = []
     try:
-        tweet_json_list = json.loads(tweet_list)
-        for t in tweet_json_list:
-            tweets.append(Tweet(t["id"], t["created_at"],
-                                t["author_id"], t["text"]))
+        if len(tweet_list) == 0:
+            log.error("empty tweet list")
+        else:
+            tweet_json_list = json.loads(tweet_list)
+            if tweet_json_list is not None:
+                for t in tweet_json_list:
+                    tweets.append(Tweet(t["id"], t["created_at"],
+                                        t["author_id"], t["text"]))
     except Exception as e:
         log.error(f"cannot parse tweet list: {e}")
     return tweets

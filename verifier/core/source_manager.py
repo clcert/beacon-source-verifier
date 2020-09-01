@@ -108,9 +108,11 @@ class SourceManager:
                 try:
                     result = res.result()
                     results.update(result)
-                except Exception as e:
+                except SourceVerificationException as e:
                     log.error(f"Error getting result from source: {e}")
                     results.update(e.get_dict())
+                except Exception as e:
+                    log.error(f"Unknown exception: {e}")
         except Exception as e:
             error = f"Error getting params for pulse {pulse_id}: {e}"
             log.error(error)
