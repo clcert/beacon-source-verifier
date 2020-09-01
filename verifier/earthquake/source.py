@@ -103,6 +103,8 @@ class Source(AbstractSource):
         if len(child_tds) != 14:
             raise SeismParsingException(f"not enough fields in seism page. seism={url}")
         id = url.split("/")[-1].split(".html")[0]
+        if id.startswith("erb_"):
+            log.info(f"seism \"{id}\" starts with \"erb_\"")
         event_data = {
             "id" :id,
             "date": child_tds[3].text,
