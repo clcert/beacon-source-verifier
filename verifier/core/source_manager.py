@@ -103,9 +103,6 @@ class SourceManager:
                 {asyncio.create_task(source.verify(params[source.name()])) for source in self.sources},
                 timeout=self.verification_timeout)
             for task in pending:
-                e = task.exception()
-                if e is not None:
-                    results.update(e.get_dict())
                 task.cancel()
             for res in done:
                 try:
@@ -113,6 +110,7 @@ class SourceManager:
                     results.update(result)
                 except Exception as e:
                     log.error(f"Error getting result from source: {e}")
+                    results.update(e.get_dict())
         except Exception as e:
             error = f"Error getting params for pulse {pulse_id}: {e}"
             log.error(error)
