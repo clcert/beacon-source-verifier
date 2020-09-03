@@ -41,9 +41,9 @@ class Buffer:
         return False
 
     def get_first(self) -> Event:
-        item = heapq.heappop(self.buffer)[-1]
-        self.set.remove(item.get_marker())
-        return item
+        item = heapq.heappop(self.buffer)
+        heapq.heappush(self.buffer, item)
+        return item[-1]
 
     def __str__(self) -> str:
         result = []
