@@ -21,7 +21,7 @@ class SourceVerificationException(Exception):
         self.reason = reason
     
     def get_dict(self):
-        return {"source": {"valid": False, "reason": self.reason}}
+        return {self.source: {"valid": False, "reason": self.reason}}
 
 class SourceManager:
     """
