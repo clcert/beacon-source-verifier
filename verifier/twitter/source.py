@@ -132,7 +132,7 @@ class Source(AbstractSource):
             if response_line:
                 resp = json.loads(response_line)
                 if "data" not in resp:
-                    raise TwitterCollectorException(f"{resp['title']}: {resp['detail']}")
+                    raise TwitterCollectorException(f"{resp}")
                 t = resp["data"]
                 tweet = Tweet(t["id"], t["created_at"], t["author_id"], t["text"])
                 start_date = tweet.date.replace(second=self.second_start)
