@@ -31,7 +31,7 @@ class Source(AbstractSource):
                 reason = f"wrong status code {status}"
             else:
                 limit = self.prefix + "0" * (len(params["metadata"]) - len(self.prefix))
-                if params["metadata"].get_marker() < limit:
+                if params["metadata"] < limit:
                     reason = f"wrong marker in pulse metadata. limit=\"{limit}\" metadata=\"{params['metadata']}\""
                 else:
                     if self.buffer.check_marker(params["metadata"]):
