@@ -13,3 +13,4 @@ rfc3986==1.4.0
 sniffio==1.1.0
 soupsieve==2.0.1
 urllib3==1.25.9
+prometheus_client==0.8.0

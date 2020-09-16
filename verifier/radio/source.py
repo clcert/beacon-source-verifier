@@ -30,9 +30,9 @@ class Source(AbstractSource):
             if  (status & 2) == 2 :
                 reason = f"wrong status code {status}"
             else:
-                their_prefix = params["metadata"][:len(self.prefix)]
-                if their_prefix != self.prefix:
-                    reason = f"wrong marker in pulse metadata. our_prefix=\"{self.prefix}\" their_prefix=\"{their_prefix}\""
+                limit = self.prefix + "0" * (len(params["metadata"]) - len(self.prefix))
+                if params["metadata"].get_marker() < limit:
+                    reason = f"wrong marker in pulse metadata. limit=\"{limit}\" metadata=\"{params['metadata']}\""
                 else:
                     if self.buffer.check_marker(params["metadata"]):
                         while len(self.buffer) < self.FRAMES_NUM:

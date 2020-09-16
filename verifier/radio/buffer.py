@@ -19,7 +19,8 @@ class Buffer:
 
     def add(self, item: Frame) -> None:
         self.buffer[item.get_marker()] = item
-        if item.get_marker()[:len(self.prefix)] == self.prefix:
+        limit = self.prefix + "0" * (len(item.get_marker()) - len(self.prefix))
+        if item.get_marker() < limit:
             self.possible += 1
         if len(self.buffer) > self.size:
             popped = self.buffer.popitem(False)
