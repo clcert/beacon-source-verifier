@@ -3,6 +3,9 @@ import logging
 from abc import abstractmethod, ABCMeta
 from threading import Thread, Event
 import time
+from core.source_manager import SourceManager
+
+from typing import List
 
 log = logging.getLogger(__name__)
 
@@ -15,7 +18,8 @@ class AbstractSource(metaclass=ABCMeta):
     ID = 0
     RESTART_TIME = 5
 
-    def __init__(self):
+    def __init__(self, mgr: SourceManager):
+        self.manager = mgr
         self.stop_event = Event()
         self.loop = asyncio.new_event_loop()
         self.thread: Thread = Thread(target=self.run_loop)
@@ -32,6 +36,7 @@ class AbstractSource(metaclass=ABCMeta):
         """
         Executes asynchronous collection of events from the source
         """
+        self.manager.metrics.collector_status.labels(self.name()).state('running')
         while True:
             log.info(f"Starting {self.name()} collector...")
             try:
@@ -41,6 +46,7 @@ class AbstractSource(metaclass=ABCMeta):
                 await self.finish_collector()
                 return
             except Exception as e:
+                self.manager.metrics.exceptions_number.labels(self.name).inc(1)
                 log.error(f"Exception in {self.name()} collector: {e.__str__()}, restarting in {AbstractSource.RESTART_TIME} seconds...")
                 time.sleep(AbstractSource.RESTART_TIME)
 
@@ -89,5 +95,13 @@ class AbstractSource(metaclass=ABCMeta):
         """
         Stops the collector
         :return:
+        """
+        pass
+
+    @abstractmethod
+    async def get_possible(self) -> List[str]:
+        """
+        Returns a list of possible metadatas
+        :return a list of possible metadatas:
         """
         pass

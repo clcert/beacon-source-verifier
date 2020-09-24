@@ -2,17 +2,19 @@ import logging
 import heapq
 from datetime import datetime
 from collections import OrderedDict
-from typing import List
+from typing import List, Set
 
 from earthquake.event import Event
+from prometheus_client import Gauge 
 
 log = logging.getLogger(__name__)
 
 class Buffer:
-    def __init__(self, size: int):
-        self.buffer = []
-        self.set = set()
+    def __init__(self, metric: Gauge, size: int):
+        self.buffer: List[Event] = []
+        self.set: Set[str] = set()
         self.size = size
+        self.metric = metric
 
     def __len__(self):
         return len(self.buffer)
@@ -27,8 +29,10 @@ class Buffer:
             else:
                 self.set.add(item.get_marker())
                 heapq.heappush(self.buffer, create_heap_item(item))
+        self.metric.set(len(self.buffer))
 
     def check_marker(self, marker: str) -> bool:
+        res = False
         if marker in self.set:
             log.debug(f"checking marker {marker} (buffer size = {len(self.buffer)} items)")
             while len(self.buffer) > 0:
@@ -37,12 +41,15 @@ class Buffer:
                 if item[-1].get_marker() == marker:
                     heapq.heappush(self.buffer, item)
                     self.set.add(item[-1].get_marker())
-                    return True
-        return False
+                    res = True
+                    break
+        self.metric.set(len(self.buffer))
+        return res
 
     def get_first(self) -> Event:
         item = heapq.heappop(self.buffer)
         heapq.heappush(self.buffer, item)
+        self.metric.set(len(self.buffer))
         return item[-1]
 
     def __str__(self) -> str:

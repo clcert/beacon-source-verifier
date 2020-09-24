@@ -1,18 +1,21 @@
 import logging
 from collections import OrderedDict
-from typing import List
+from typing import List, Set
 
 from radio.frame import Frame
+from prometheus_client import Gauge
+
 
 log = logging.getLogger(__name__)
 
 
 class Buffer:
-    def __init__(self, size: int, prefix: str):
+    def __init__(self, metric: Gauge, size: int, prefix: str):
         self.buffer = OrderedDict()
         self.prefix = prefix
         self.size = size
-        self.possible = 0
+        self.possible: Set(str) = set()
+        self.metric = metric
 
     def __len__(self):
         return len(self.buffer)
@@ -21,16 +24,18 @@ class Buffer:
         self.buffer[item.get_marker()] = item
         limit = self.prefix + "0" * (len(item.get_marker()) - len(self.prefix))
         if item.get_marker() < limit:
-            self.possible += 1
+            self.possible.add(item.get_marker())
         if len(self.buffer) > self.size:
             popped = self.buffer.popitem(False)
-            if popped.get_marker()[:len(self.prefix)] == self.prefix:
-                self.possible -= 1
-
+            if popped.get_marker() in self.possible:
+                self.possible.remove(popped.get_marker())
+        self.metric.set(len(self.buffer))
 
     def check_marker(self, marker: str) -> bool:
-        log.debug(f"checking marker {marker} (buffer size = {len(self.buffer)} items)")
+        log.debug(
+            f"checking marker {marker} (buffer size = {len(self.buffer)} items)")
         i = 0
+        resp = False
         if marker in self.buffer:
             while len(self.buffer) > 0:
                 k, v = self.buffer.popitem(False)
@@ -38,22 +43,24 @@ class Buffer:
                     self.buffer[k] = v
                     self.buffer.move_to_end(k, False)
                     log.debug(f"removed {i} elements before hash...")
-                    return True
-                if v.get_marker()[:len(self.prefix)] == self.prefix:
-                    self.possible -= 1
+                    resp = True
+                    break
+                if k in self.possible:
+                    self.possible.remove(k)
                 i += 1
-        log.debug(f"marker {marker} not found...")
-        return False
+        self.metric.set(len(self.buffer))
+        return resp
 
     def get_list(self, size: int) -> List[Frame]:
+        res: List[Frame] = []
         if len(self.buffer) < size:
-            log.debug(f"buffer not full yet ({len(self.buffer)}/{self.size}), try again in a few seconds...")
-            return []
+            log.debug(
+                f"buffer not full yet ({len(self.buffer)}/{self.size}), try again in a few seconds...")
         else:
-            res: List[Frame] = []
             for _ in range(size):
-                _, v = self.buffer.popitem(False)
-                if v.get_marker()[:len(self.prefix)] == self.prefix:
-                    self.possible -= 1
+                k, v = self.buffer.popitem(False)
+                if k in self.possible:
+                    self.possible.remove(k)
                 res.append(v)
-            return res
+        self.metric.set(len(self.buffer))
+        return res

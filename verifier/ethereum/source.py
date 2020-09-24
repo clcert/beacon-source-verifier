@@ -9,12 +9,15 @@ from urllib.parse import urljoin
 import requests
 from requests.auth import AuthBase
 
-from core.source_manager import SourceVerificationException
+from core.source_manager import SourceManager
+from core.results import VerifierException, VerifierResult
 
 from core.abstract_source import AbstractSource
 from ethereum.buffer import Buffer
 
 from ethereum.block import Block
+
+from typing import Set
 
 log = logging.getLogger(__name__)
 
@@ -101,7 +104,7 @@ class Source(AbstractSource):
         Rivet
     ]
 
-    def __init__(self, config: map):
+    def __init__(self, config: map, mgr: SourceManager):
         self.sources = {}
         self.buffers = {}
         self.running = False
@@ -112,51 +115,57 @@ class Source(AbstractSource):
             token = config.get("tokens", {}).get(f"{api.NAME}", None)
             if token is not None:
                 self.sources[api.NAME] = api(token)
-                self.buffers[api.NAME] = Buffer(Source.BUFFER_SIZE)
+                self.buffers[api.NAME] = Buffer(mgr.metrics.collector_buffer_size.labels(f"{self.name()}_{api.NAME}"), Source.BUFFER_SIZE)
         if len(self.sources) < self.threshold:
             raise NotEnoughAPIsException()
-        super().__init__()
+        super().__init__(mgr)
 
     async def verify(self, params: map) -> map:
-        try:
-            valid = False
-            reason = ""
-            status = params.get("status", 1)
-            if (status & 2) == 2 :
-                reason = f"wrong status code: {status}"
-            else:
-                block_num = int(params["metadata"], 16)
-                if block_num % self.block_id_module == 0:
-                    correct = 0
-                    errors = []
-                    possible = {}
-                    for k, buffer in self.buffers.items():
-                        possible[k] = buffer.total_hashes()
-                        if buffer.check_marker(block_num):
-                            block = buffer.get_first()
-                            if params["raw"] in block.hashes:
-                                correct += 1
-                            else:
-                                error = f"block hash not found in block generation. block_number={block_num} block_hash={params['raw']} source_name={k} source_buffer_length={len(buffer)} source_buffer={buffer}"
-                                errors.append(error)
-                                log.debug(error)
+        result = VerifierResult(self.name())
+        result.possible = len(self.get_possible())
+        status = params.get("status", 2)
+        result.ext_value_status = status
+        if (status & 2) == 2 :
+            result.status_code = 240
+            result.add_detail(
+                f"ExtValue is not valid", 
+                f"beacon_status={status}")
+        else:
+            block_num = int(params["metadata"], 16)
+            if block_num % self.block_id_module == 0:
+                errors = []
+                correct = 0
+                for k, buffer in self.buffers.items():
+                    if buffer.check_marker(block_num):
+                        block = buffer.get_first()
+                        if params["raw"] in block.hashes:
+                            correct += 1
                         else:
-                            error = f"block number not found on buffer. block_number={block_num} source_name={k} source_buffer_length={len(buffer)} source_buffer={buffer}"
+                            error = f"Block hash not found in generation. block_number={block_num} block_hash={params['raw']} source_name={k} source_buffer_length={len(buffer)} source_buffer={buffer}"
                             errors.append(error)
                             log.debug(error)
-                    if correct >= self.threshold:
-                        valid = True
-                        reason = f"possible={json.dumps(possible)}"
                     else:
-                        reason = f"not enough valid nodes to verify. total_nodes={len(self.buffers)} threshold={self.threshold} correct={correct} errors=[{','.join(errors)}]"
+                        error = f"Block number not found on buffer. block_number={block_num} source_name={k} source_buffer_length={len(buffer)} source_buffer={buffer}"
+                        errors.append(error)
+                        log.debug(error)
+                if correct >= self.threshold:
+                    result.code = 204
                 else:
-                    reason = f"beacon reported an invalid block number as randomness source. module={self.block_id_module} block_id={block_num}"
-            return {self.name(): {
-                "valid": valid,
-                "reason": reason
-            }}
-        except Exception as e:
-            raise SourceVerificationException(self.name(), str(e))
+                    result.code = 222
+                    result.add_detail(
+                        f"Not enough valid nodes to verify",
+                        f"total_nodes={len(self.buffers)}",
+                        f"threshold={self.threshold}",
+                        f"correct={correct}",
+                        f"errors={json.dumps(errors)}")
+            else:
+                result.code = 220
+                result.add_detail(
+                    f"Incorrect block number module", 
+                    f"module={self.block_id_module}",
+                    f"block_id={block_num}")
+        result.finish()
+        return result
 
     async def init_collector(self) -> None:
         self.running = True
@@ -184,3 +193,27 @@ class Source(AbstractSource):
 
     async def finish_collector(self) -> None:
         self.running = False
+
+    def get_all(self) -> Set[str]:
+        possible = set()
+        for buffer in self.buffers.values():
+            for block_id, block in buffer.items():
+                for h in block.hashes.values():
+                    val = f"{block_id}:{h}"
+                    if val not in possible:
+                        possible.add(val)
+        return possible
+    
+    
+    def get_possible(self) -> List[str]:
+        possible = {}
+        for buffer in self.buffers.values():
+            for block_id, block in buffer.buffer.items():
+                for h in block.hashes:
+                    val = f"{block_id}:{h}"
+                    if val not in possible:
+                        possible[val] = 0
+                    possible[val] += 1
+        return [v for v in possible.values() if v >= self.threshold]
+
+

@@ -7,6 +7,7 @@
   "verification_interval": 60,
   "base_api": "https://random.uchile.cl/beacon/2.0",
   "collector_stop_timeout": 10,
+  "metrics_port": 9101,
   "sources": {
     "radio": {
       "enabled": true,

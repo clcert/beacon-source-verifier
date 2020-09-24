@@ -4,11 +4,11 @@ import datetime
 class Tweet:
 
     def __init__(self, id: int, created_date: str, author: str, message: str):
-        self.id = id
-        self.datestr = created_date
-        self.date = datetime.datetime.fromisoformat(created_date[:-1])
-        self.author = author
-        self.message = message
+        self.id: int = id
+        self.datestr: str = created_date
+        self.date: datetime.datetime = datetime.datetime.fromisoformat(created_date[:-1])
+        self.author: str = author
+        self.message: str = message
 
     def get_canonical_form(self) -> bytes:
         return (self.datestr + str(self.id) + self.author + self.message).encode()

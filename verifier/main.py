@@ -46,7 +46,7 @@ if __name__ == "__main__":
             exit(1)
         source_config = config["sources"][source.NAME]
         if source_config.get("enabled", False):
-            source_instance = source(source_config)
+            source_instance = source(source_config, sourceManager)
             sourceManager.add_source(source_instance)
     try:
         sourceManager.start_collection()
