@@ -137,6 +137,7 @@ class SourceManager:
                 f"pulse={pulse_id}",
                 f"error={error}")
             pulse_result.status_code = 120
+        pulse_result.finish()
         self.register_metrics(pulse_result, verification_results)
         self.save_response(pulse_result, verification_results, is_last=True)
 
