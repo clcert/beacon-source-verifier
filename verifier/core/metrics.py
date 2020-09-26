@@ -6,7 +6,11 @@ from datetime import datetime
 class Metrics():
     def __init__(self):
         # Pulse metrics
-        self.pulse_number = Gauge('pulse_number', 'Current pulse number')
+        self.pulse_number = Gauge(
+            'pulse_number',
+            'Current pulse number',
+            ["chain"]
+        )
         self.pulse_status = Summary(
             'pulse_status',
             'Pulse status',

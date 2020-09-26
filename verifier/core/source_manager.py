@@ -189,7 +189,7 @@ class SourceManager:
 
     def register_metrics(self, pulse_result: PulseResult, verifier_results: List[VerifierResult]) -> None:
         # Pulse Metrics
-        self.metrics.pulse_number.set(pulse_result.get_id())
+        self.metrics.pulse_number.labels(pulse_result.get_chain()).set(pulse_result.get_id())
         self.metrics.pulse_status.labels(pulse_result.status_code).observe(1)
         # General Verifier Metrics
         for verifier in verifier_results:
