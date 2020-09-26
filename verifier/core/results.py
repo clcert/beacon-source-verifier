@@ -91,7 +91,7 @@ class VerifierResult:
     def to_ext_value_map(self) -> Dict[str, bool]:
         extvalues = {}
         for i, text in VerifierResult.lsbs.items():
-            extvalues[text] = self.ext_value_status & (2**i) == i
+            extvalues[text] = self.ext_value_status & (2**i) == (2**i)
         return extvalues
 
     def running_time(self) -> int:
