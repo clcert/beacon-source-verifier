@@ -37,9 +37,9 @@ class Source(AbstractSource):
                 f"ExtValue is not valid", 
                 f"beacon_status={status}")
         else:
-            limit = self.prefix + "0" * \
+            limit = self.prefix + "f" * \
                 (len(params["metadata"]) - len(self.prefix))
-            if params["metadata"] >= limit:
+            if params["metadata"] > limit:
                 result.status_code = 220
                 result.add_detail(
                     f"Wrong marker in pulse metadata",

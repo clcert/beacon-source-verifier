@@ -22,8 +22,8 @@ class Buffer:
 
     def add(self, item: Frame) -> None:
         self.buffer[item.get_marker()] = item
-        limit = self.prefix + "0" * (len(item.get_marker()) - len(self.prefix))
-        if item.get_marker() < limit:
+        limit = self.prefix + "f" * (len(item.get_marker()) - len(self.prefix))
+        if item.get_marker() <= limit:
             self.possible.add(item.get_marker())
         if len(self.buffer) > self.size:
             popped = self.buffer.popitem(False)

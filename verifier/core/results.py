@@ -90,7 +90,7 @@ class VerifierResult:
 
     def to_ext_value_map(self) -> Dict[str, bool]:
         extvalues = {}
-        for i, text in enumerate(VerifierResult.lsbs):
+        for i, text in VerifierResult.lsbs.items():
             extvalues[text] = self.ext_value_status & i == i
         return extvalues
 
