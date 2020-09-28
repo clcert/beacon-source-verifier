@@ -17,6 +17,7 @@ log = logging.getLogger(__name__)
 class BeaconAPIException(Exception):
     pass
 
+
 class SourceManager:
     """
     SourceManager groups, starts and stops a set of sources.
@@ -50,7 +51,8 @@ class SourceManager:
             f"Starting collectors: {[source.name() for source in self.sources]}")
         self.threads = []
         for source in self.sources:
-            self.metrics.collector_status.labels(source.name()).state('starting')
+            self.metrics.collector_status.labels(
+                source.name()).state('starting')
             self.threads.append(source.thread.start())
         self.collector_futures.update(
             [asyncio.run_coroutine_threadsafe(source.run_collector(), source.loop) for source in self.sources])
@@ -63,7 +65,8 @@ class SourceManager:
         log.debug(
             f"Stopping collectors: {[source.name() for source in self.sources]}")
         for source in self.sources:
-            self.metrics.collector_status.labels(source.name()).state('stopping')
+            self.metrics.collector_status.labels(
+                source.name()).state('stopping')
             await source.stop_collector()
         _, pending = await asyncio.wait({future for future in self.collector_futures},
                                         return_when=asyncio.FIRST_EXCEPTION,
@@ -83,7 +86,7 @@ class SourceManager:
             try:
                 await self.run_one_verification()
             except Exception as e:
-                self.metrics.exceptions_number.inc(1)
+                self.metrics.exceptions_number.observe(1)
                 log.error(f"exception verifying pulse: {e}")
             end_time = datetime.now()
             total_time = (end_time - start_time).seconds
@@ -116,24 +119,24 @@ class SourceManager:
                     result = res.result()
                     verification_results.append(result)
                 except VerifierException as e:
-                    self.metrics.exceptions_number.inc(1)
+                    self.metrics.exceptions_number.observe(1)
                     log.error(f"Error getting result from source: {e}")
                     self.metrics.verification_status.labels(
                         [res.name, res.status_code]).observe(1)
                     verification_results.append(d)
                 except Exception as e:
-                    self.metrics.exceptions_number.inc(1)
+                    self.metrics.exceptions_number.observe(1)
                     log.error(f"Unknown exception: {e}")
                     d = VerifierResult(res.name)
                     d.status_code = 299
                     d.detail = str(e)
                     verification_results.append(d)
         except Exception as e:
-            self.metrics.exceptions_number.inc(1)
+            self.metrics.exceptions_number.observe(1)
             error = f"Error getting params"
             log.error(f"{error}. pulse={pulse_id} error={str(e)}")
             pulse_result.add_detail(
-                error, 
+                error,
                 f"pulse={pulse_id}",
                 f"error={error}")
             pulse_result.status_code = 120
@@ -189,13 +192,18 @@ class SourceManager:
 
     def register_metrics(self, pulse_result: PulseResult, verifier_results: List[VerifierResult]) -> None:
         # Pulse Metrics
-        self.metrics.pulse_number.labels(pulse_result.get_chain()).set(pulse_result.get_id())
+        self.metrics.pulse_number.labels(
+            pulse_result.get_chain()).set(pulse_result.get_id())
         self.metrics.pulse_status.labels(pulse_result.status_code).observe(1)
         # General Verifier Metrics
         for verifier in verifier_results:
-            self.metrics.verification_possible.labels(verifier.scope).observe(verifier.possible)
+            self.metrics.verification_possible.labels(
+                verifier.scope).observe(verifier.possible)
             for ext_val, b in verifier.to_ext_value_map().items():
                 if b:
-                    self.metrics.verification_ext_value_status.labels(verifier.scope, ext_val).observe(1)
-            self.metrics.verification_status.labels(verifier.scope, verifier.status_code).observe(1)
-            self.metrics.verification_seconds.labels(verifier.scope).observe(verifier.running_time())
+                    self.metrics.verification_ext_value_status.labels(
+                        verifier.scope, ext_val).observe(1)
+            self.metrics.verification_status.labels(
+                verifier.scope, verifier.status_code).observe(1)
+            self.metrics.verification_seconds.labels(
+                verifier.scope).observe(verifier.running_time())

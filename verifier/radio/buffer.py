@@ -29,7 +29,7 @@ class Buffer:
             popped = self.buffer.popitem(False)
             if popped.get_marker() in self.possible:
                 self.possible.remove(popped.get_marker())
-        self.metric.set(len(self.buffer))
+        self.metric.observe(len(self.buffer))
 
     def check_marker(self, marker: str) -> bool:
         log.debug(
@@ -48,7 +48,7 @@ class Buffer:
                 if k in self.possible:
                     self.possible.remove(k)
                 i += 1
-        self.metric.set(len(self.buffer))
+        self.metric.observe(len(self.buffer))
         return resp
 
     def get_list(self, size: int) -> List[Frame]:
@@ -62,5 +62,5 @@ class Buffer:
                 if k in self.possible:
                     self.possible.remove(k)
                 res.append(v)
-        self.metric.set(len(self.buffer))
+        self.metric.observe(len(self.buffer))
         return res

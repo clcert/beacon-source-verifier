@@ -62,7 +62,8 @@ class Source(AbstractSource):
         self.secret = config["consumer_secret"]
         self.tweet_interval = config["tweet_interval"]
         self.second_start = config["second_start"]
-        self.buffer = Buffer(mgr.metrics.collector_buffer_size.labels(self.name()), self.second_start, self.BUFFER_SIZE)
+        self.buffer = Buffer(mgr.metrics.collector_buffer_size.labels(
+            self.name()), self.second_start, self.BUFFER_SIZE)
         self.response = None
         super().__init__(mgr)
 
@@ -76,10 +77,12 @@ class Source(AbstractSource):
             result.add_detail(
                 f"ExtValue is not valid."
                 f"status={status}")
-        else:  
+        else:
             their_list = parse_tweet_list(params["raw"])
-            start_date = datetime.datetime.fromisoformat(params["metadata"][:-1])
-            end_date = start_date + datetime.timedelta(seconds=self.tweet_interval)
+            start_date = datetime.datetime.fromisoformat(
+                params["metadata"][:-1])
+            end_date = start_date + \
+                datetime.timedelta(seconds=self.tweet_interval)
             if start_date.second != self.second_start:
                 result.status_code = 220
                 result.add_detail(
@@ -110,8 +113,10 @@ class Source(AbstractSource):
                             j += 1
                     our_uniq += our_list[i:]
                     their_uniq += their_list[j:]
-                    self.manager.metrics.twitter_extra_tweets.labels('verifier').observe(len(our_uniq))
-                    self.manager.metrics.twitter_extra_tweets.labels('beacon').observe(len(their_uniq))
+                    self.manager.metrics.twitter_extra_tweets.labels(
+                        'verifier').observe(len(our_uniq))
+                    self.manager.metrics.twitter_extra_tweets.labels(
+                        'beacon').observe(len(their_uniq))
                     if len(our_uniq) > 0 or len(their_uniq) > 0:
                         result.code = 221
                         result.add_detail(
@@ -139,8 +144,10 @@ class Source(AbstractSource):
                                      stream=True)
 
     async def collect(self) -> None:
+        empty_lines_in_a_row = 0
         for response_line in self.response.iter_lines():
             if response_line:
+                empty_lines_in_a_row = 0
                 resp = json.loads(response_line)
                 if "data" not in resp:
                     raise TwitterCollectorException(f"{resp}")
@@ -152,7 +159,12 @@ class Source(AbstractSource):
                     datetime.timedelta(seconds=self.tweet_interval)
                 if tweet.date >= start_date and tweet.date <= end_date:
                     self.buffer.add(tweet)
-        print("collector ended :(")
+            else:
+                empty_lines_in_a_row += 1
+                if empty_lines_in_a_row >= 10:
+                    log.error("Empty line received from Twitter. Restarting...")
+                    raise TwitterCollectorException(
+                        "empty line received from twitter")
 
     async def finish_collector(self) -> None:
         self.response.close()

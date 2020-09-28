@@ -36,18 +36,21 @@ class AbstractSource(metaclass=ABCMeta):
         """
         Executes asynchronous collection of events from the source
         """
-        self.manager.metrics.collector_status.labels(self.name()).state('running')
+        self.manager.metrics.collector_status.labels(
+            self.name()).state('running')
         while True:
-            log.info(f"Starting {self.name()} collector...")
             try:
+                log.info(f"Initializing {self.name()} collector...")
                 await self.init_collector()
                 while not self.stop_event.is_set():
                     await self.collect()
+                log.info(f"Stopping{self.name()} collector...")
                 await self.finish_collector()
                 return
             except Exception as e:
-                self.manager.metrics.exceptions_number.labels(self.name).inc(1)
-                log.error(f"Exception in {self.name()} collector: {e.__str__()}, restarting in {AbstractSource.RESTART_TIME} seconds...")
+                self.manager.metrics.exceptions_number.observe(1)
+                log.error(
+                    f"Exception in {self.name()} collector: {e.__str__()}, restarting in {AbstractSource.RESTART_TIME} seconds...")
                 time.sleep(AbstractSource.RESTART_TIME)
 
     async def stop_collector(self):
@@ -64,7 +67,7 @@ class AbstractSource(metaclass=ABCMeta):
         :return: source name
         """
         return self.NAME
-        
+
     @abstractmethod
     async def verify(self, params: map) -> map:
         """

@@ -29,7 +29,7 @@ class Buffer:
             else:
                 self.set.add(item.get_marker())
                 heapq.heappush(self.buffer, create_heap_item(item))
-        self.metric.set(len(self.buffer))
+        self.metric.observe(len(self.buffer))
 
     def check_marker(self, marker: str) -> bool:
         res = False
@@ -43,13 +43,13 @@ class Buffer:
                     self.set.add(item[-1].get_marker())
                     res = True
                     break
-        self.metric.set(len(self.buffer))
+        self.metric.observe(len(self.buffer))
         return res
 
     def get_first(self) -> Event:
         item = heapq.heappop(self.buffer)
         heapq.heappush(self.buffer, item)
-        self.metric.set(len(self.buffer))
+        self.metric.observe(len(self.buffer))
         return item[-1]
 
     def __str__(self) -> str:

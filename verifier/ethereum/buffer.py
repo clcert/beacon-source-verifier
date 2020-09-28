@@ -37,7 +37,7 @@ class Buffer:
             self.buffer[item.get_marker()] = item   
         if len(self.buffer) > self.size:
             self.buffer.popitem(False)
-        self.metric.set(len(self.buffer))
+        self.metric.observe(len(self.buffer))
 
     def check_marker(self, marker: str) -> bool:
         log.debug(f"checking marker {marker} (buffer size = {len(self.buffer)} items)")
@@ -53,14 +53,14 @@ class Buffer:
                     res = True
                     break
                 i += 1
-        self.metric.set(len(self.buffer))
+        self.metric.observe(len(self.buffer))
         return res
 
     def get_first(self) -> Block:
         k, v = self.buffer.popitem(False)
         self.buffer[k] = v
         self.buffer.move_to_end(k, False)
-        self.metric.set(len(self.buffer))
+        self.metric.observe(len(self.buffer))
         return v
 
     def __str__(self) -> str:

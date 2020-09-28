@@ -29,10 +29,11 @@ class Buffer:
             heapq.heappush(self.buffer, create_heap_item(item))
             if item.date.second == self.second_start:
                 self.possible.add(item.datestr)
-        self.metric.set(len(self.buffer))
+        self.metric.observe(len(self.buffer))
 
     def check_marker(self, marker: datetime.date) -> bool:
-        log.debug(f"checking marker {marker} (buffer size = {len(self.buffer)} items)")
+        log.debug(
+            f"checking marker {marker} (buffer size = {len(self.buffer)} items)")
         resp = False
         while len(self.buffer) > 0:
             item = heapq.heappop(self.buffer)
@@ -43,7 +44,7 @@ class Buffer:
                 self.possible.add(item[-1].datestr)
                 resp = True
                 break
-        self.metric.set(len(self.buffer))
+        self.metric.observe(len(self.buffer))
         return resp
 
     def get_list(self, end_date: datetime.date) -> List[Tweet]:
@@ -58,7 +59,7 @@ class Buffer:
                 heapq.heappush(self.buffer, item)
                 self.possible.add(item[-1].datestr)
                 break
-        self.metric.set(len(self.buffer))
+        self.metric.observe(len(self.buffer))
         return items
 
 

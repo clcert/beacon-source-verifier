@@ -44,13 +44,13 @@ class Metrics():
             ['source'],
             states=['starting', 'running', 'stopping', 'stopped']
         )
-        self.collector_buffer_size = Gauge(
+        self.collector_buffer_size = Summary(
             'collector_buffer_size',
             'Collector Buffer Size',
             ['source']
         )
         # Exception number
-        self.exceptions_number = Counter(
+        self.exceptions_number = Summary(
             'exceptions_number',
             'Number of unexpected exceptions since last restart',
         )
@@ -63,4 +63,3 @@ class Metrics():
 
     def start_server(self, port):
         start_http_server(port)
-        
