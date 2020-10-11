@@ -26,9 +26,9 @@ class Buffer:
         if item.get_marker() <= limit:
             self.possible.add(item.get_marker())
         if len(self.buffer) > self.size:
-            popped = self.buffer.popitem(False)
-            if popped.get_marker() in self.possible:
-                self.possible.remove(popped.get_marker())
+            k, popped = self.buffer.popitem(False)
+            if k in self.possible:
+                self.possible.remove(k)
         self.metric.observe(len(self.buffer))
 
     def check_marker(self, marker: str) -> bool:
