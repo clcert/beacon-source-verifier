@@ -55,7 +55,7 @@ class Metrics():
             'Number of unexpected exceptions since last restart',
         )
         # Twitter Metadata
-        self. twitter_extra_tweets = Summary(
+        self. twitter_extra_tweets = Gauge(
             'twitter_verifier_extra_tweets',
             "Tweets that one side has but the other has not",
             ['owner']

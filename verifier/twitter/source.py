@@ -114,9 +114,9 @@ class Source(AbstractSource):
                     our_uniq += our_list[i:]
                     their_uniq += their_list[j:]
                     self.manager.metrics.twitter_extra_tweets.labels(
-                        'verifier').observe(len(our_uniq))
+                        'verifier').set(len(our_uniq))
                     self.manager.metrics.twitter_extra_tweets.labels(
-                        'beacon').observe(len(their_uniq))
+                        'beacon').set(len(their_uniq))
                     if len(our_uniq) > 0 or len(their_uniq) > 0:
                         result.code = 221
                         result.add_detail(
